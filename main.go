@@ -37,7 +37,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	for event := range events {
+	for _, event := range events {
 		log.Printf("%v", event)
 	}
 }
