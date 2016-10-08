@@ -50,7 +50,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if message, ok := event.Message.(*linebot.TextMessage); ok {
-			log.Printf("text message: %v", message.Text)
+			log.Printf("text message from %s: %v", event.Source.UserID, message.Text)
 			inferences, err := inferences.BulkFetch(event.Source.UserID)
 			if err != nil {
 				log.Println(err)
