@@ -21,5 +21,9 @@
 			"revisionTime": "2016-10-05T16:48:53Z"
 		}
 	],
-	"rootPath": "github.com/sugyan/face-manager-linebot"
+	"rootPath": "github.com/sugyan/face-manager-linebot",
+	"heroku": {
+		"install": [ "./..." ],
+		"goVersion": "go1.7.1"
+	}
 }
