@@ -3,6 +3,7 @@ package inferences
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -21,7 +22,7 @@ func BulkFetch(userID string) ([]inference, error) {
 		wg.Add(1)
 		go func(page int) {
 			defer wg.Done()
-			res, err := fetch(userID+"@line.me", page)
+			res, err := fetch(userID, page)
 			if err != nil {
 				log.Println(err)
 				return
@@ -41,21 +42,29 @@ func BulkFetch(userID string) ([]inference, error) {
 	return inferences, nil
 }
 
-func fetch(email string, page int) (*result, error) {
+// Accept function
+func Accept(userID string, inferenceID int) error {
+	url := endpointBase + "/inferences/" + strconv.Itoa(inferenceID) + "/accept.json?"
+	res, err := do("POST", url, userID)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	log.Println(string(bytes))
+	return nil
+}
+
+func fetch(userID string, page int) (*result, error) {
 	values := url.Values{}
 	values.Add("page", strconv.Itoa(page))
-	req, err := http.NewRequest("GET", endpointBase+"/inferences.json?"+values.Encode(), nil)
+	url := endpointBase + "/inferences.json?" + values.Encode()
+	res, err := do("GET", url, userID)
 	if err != nil {
 		return nil, err
-	}
-	req.Header.Set("X-User-Token", os.Getenv("INFERENCES_API_TOKEN"))
-	req.Header.Set("X-User-Email", email)
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.New(res.Status)
 	}
 	defer res.Body.Close()
 	result := &result{}
@@ -65,6 +74,19 @@ func fetch(email string, page int) (*result, error) {
 	return result, nil
 }
 
-// Accept function
-func Accept() {
+func do(method, url, userID string) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-User-Token", os.Getenv("INFERENCES_API_TOKEN"))
+	req.Header.Set("X-User-Email", userID+"@line.me")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New(res.Status)
+	}
+	return res, err
 }
