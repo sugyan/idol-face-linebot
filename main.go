@@ -81,7 +81,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 		default:
-			log.Printf("not message or postback event: %v", event)
+			log.Printf("not message/postback event: %v", event)
 			continue
 		}
 	}
@@ -105,7 +105,7 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 		inference := inferences[ids[i]]
 		name := inference.Label.Name
 		if inference.Label.Description != "" {
-			name += " (" + inference.Label.Description + ")"
+			name += " (" + strings.Replace(inference.Label.Description, "\n", ", ", -1) + ")"
 		}
 		columns = append(
 			columns,
