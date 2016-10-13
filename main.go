@@ -71,7 +71,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 				linebot.NewTemplateMessage(
 					"template message",
 					linebot.NewConfirmTemplate(
-						"更新しました！",
+						fmt.Sprintf("id:%s を更新しました！", ids[0]),
 						linebot.NewMessageTemplateAction("やっぱ違うわ", "やっぱ違うわ"),
 						linebot.NewURITemplateAction("確認する", resultURL),
 					),
