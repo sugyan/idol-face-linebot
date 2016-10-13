@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/face-manager-linebot/inferences"
@@ -73,6 +74,7 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 		return errors.New("empty inferences")
 	}
 	ids := rand.Perm(len(inferences))
+	log.Printf("%d, %v", len(ids), ids)
 	num := 5
 	if len(ids) < num {
 		num = len(ids)
@@ -90,8 +92,15 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 				inference.Face.ImageURL,
 				fmt.Sprintf("id: %d [%.4f]", inference.Face.ID, inference.Score),
 				name,
-				linebot.NewURITemplateAction("くわしく", inference.Face.Photo.SourceURL),
-				linebot.NewPostbackTemplateAction("あってる", string(inference.ID), ""),
+				linebot.NewURITemplateAction(
+					"くわしく",
+					inference.Face.Photo.SourceURL,
+				),
+				linebot.NewPostbackTemplateAction(
+					"あってる",
+					strconv.FormatUint(uint64(inference.ID), 10),
+					"",
+				),
 			),
 		)
 	}
