@@ -89,7 +89,6 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 		return errors.New("empty inferences")
 	}
 	ids := rand.Perm(len(inferences))
-	log.Printf("%d, %v", len(ids), ids)
 	num := 5
 	if len(ids) < num {
 		num = len(ids)
@@ -105,7 +104,7 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 			columns,
 			linebot.NewCarouselColumn(
 				inference.Face.ImageURL,
-				fmt.Sprintf("id: %d [%.4f]", inference.Face.ID, inference.Score),
+				fmt.Sprintf("id: %d [%.5f]", inference.Face.ID, inference.Score),
 				name,
 				linebot.NewURITemplateAction(
 					"くわしく",
