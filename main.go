@@ -68,7 +68,14 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			}
 			if _, err := a.bot.ReplyMessage(
 				event.ReplyToken,
-				linebot.NewTextMessage("更新しました！\n"+resultURL),
+				linebot.NewTemplateMessage(
+					"template message",
+					linebot.NewConfirmTemplate(
+						"更新しました！",
+						linebot.NewMessageTemplateAction("やっぱ違うわ", "やっぱ違うわ"),
+						linebot.NewURITemplateAction("確認する", resultURL),
+					),
+				),
 			).Do(); err != nil {
 				log.Printf("send message error: %v", err)
 				continue
