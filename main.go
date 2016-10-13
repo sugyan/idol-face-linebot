@@ -72,6 +72,11 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 							inference.Face.ImageURL,
 							string(inference.Face.ID),
 							fmt.Sprintf("%s [%f]", inference.Label.Name, inference.Score),
+							linebot.NewURITemplateAction(
+								"ソースを見る",
+								inference.Face.Photo.SourceURL,
+							),
+							linebot.NewPostbackTemplateAction("合ってる", "data", ""),
 						),
 					),
 				),
