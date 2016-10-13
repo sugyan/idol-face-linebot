@@ -111,7 +111,7 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 			columns,
 			linebot.NewCarouselColumn(
 				inference.Face.ImageURL,
-				fmt.Sprintf("id: %d [%.5f]", inference.Face.ID, inference.Score),
+				fmt.Sprintf("id:%d [%.5f]", inference.Face.ID, inference.Score),
 				name,
 				linebot.NewURITemplateAction(
 					"くわしく",
