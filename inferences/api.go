@@ -43,8 +43,8 @@ func BulkFetch(userID string) ([]inference, error) {
 }
 
 // Accept function
-func Accept(userID string, inferenceID int) error {
-	url := endpointBase + "/inferences/" + strconv.Itoa(inferenceID) + "/accept.json?"
+func Accept(userID, inferenceID string) error {
+	url := endpointBase + "/inferences/" + inferenceID + "/accept.json?"
 	res, err := do("POST", url, userID)
 	if err != nil {
 		return err

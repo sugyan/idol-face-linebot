@@ -58,6 +58,17 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			}
 		case linebot.EventTypePostback:
 			log.Printf("got postback: %s", event.Postback.Data)
+			if err := inferences.Accept(event.Source.UserID, event.Postback.Data); err != nil {
+				log.Printf("accept error: %v", err)
+				continue
+			}
+			if err := a.bot.ReplyMessage(
+				event.ReplyToken,
+				linebot.NewTextMessage("更新しました！"),
+			); err != nil {
+				log.Printf("send message error: %v", err)
+				continue
+			}
 		default:
 			log.Printf("not message or postback event: %v", event)
 			continue
@@ -84,7 +95,7 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 		inference := inferences[ids[i]]
 		name := inference.Label.Name
 		if inference.Label.Description != "" {
-			name += " - " + inference.Label.Description
+			name += " (" + inference.Label.Description + ")"
 		}
 		columns = append(
 			columns,
