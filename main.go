@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/face-manager-linebot/inferences"
@@ -58,14 +59,16 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			}
 		case linebot.EventTypePostback:
 			log.Printf("got postback: %s", event.Postback.Data)
-			if err := inferences.Accept(event.Source.UserID, event.Postback.Data); err != nil {
+			// <face-id>,<inference-id>
+			ids := strings.Split(event.Postback.Data, ",")
+			if err := inferences.Accept(event.Source.UserID, ids[1]); err != nil {
 				log.Printf("accept error: %v", err)
 				continue
 			}
-			if err := a.bot.ReplyMessage(
+			if _, err := a.bot.ReplyMessage(
 				event.ReplyToken,
 				linebot.NewTextMessage("更新しました！"),
-			); err != nil {
+			).Do(); err != nil {
 				log.Printf("send message error: %v", err)
 				continue
 			}
@@ -109,7 +112,13 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 				),
 				linebot.NewPostbackTemplateAction(
 					"あってる",
-					strconv.FormatUint(uint64(inference.ID), 10),
+					strings.Join(
+						[]string{
+							strconv.FormatUint(uint64(inference.Face.ID), 10),
+							strconv.FormatUint(uint64(inference.ID), 10),
+						},
+						",",
+					),
 					"",
 				),
 			),
