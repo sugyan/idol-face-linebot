@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"fmt"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/face-manager-linebot/inferences"
 )
@@ -64,7 +65,16 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			inference := inferences[ids[0]]
 			_, err = a.bot.ReplyMessage(
 				event.ReplyToken,
-				linebot.NewImageMessage(inference.Face.ImageURL, inference.Face.ImageURL),
+				linebot.NewTemplateMessage(
+					"template message",
+					linebot.NewCarouselTemplate(
+						linebot.NewCarouselColumn(
+							inference.Face.ImageURL,
+							string(inference.Face.ID),
+							fmt.Sprintf("%s [%f]", inference.Label.Name, inference.Score),
+						),
+					),
+				),
 			).Do()
 			if err != nil {
 				log.Println(err)
