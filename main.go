@@ -70,13 +70,13 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 					linebot.NewCarouselTemplate(
 						linebot.NewCarouselColumn(
 							inference.Face.ImageURL,
-							string(inference.Face.ID),
+							fmt.Sprintf("face %d", inference.Face.ID),
 							fmt.Sprintf("%s [%f]", inference.Label.Name, inference.Score),
 							linebot.NewURITemplateAction(
 								"ソースを見る",
 								inference.Face.Photo.SourceURL,
 							),
-							linebot.NewPostbackTemplateAction("合ってる", "data", ""),
+							linebot.NewPostbackTemplateAction("あってる", "data", ""),
 						),
 					),
 				),
