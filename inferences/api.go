@@ -3,7 +3,6 @@ package inferences
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -43,19 +42,22 @@ func BulkFetch(userID string) ([]inference, error) {
 }
 
 // Accept function
-func Accept(userID, inferenceID string) error {
+func Accept(userID, inferenceID string) (string, error) {
 	url := endpointBase + "/inferences/" + inferenceID + "/accept.json?"
 	res, err := do("POST", url, userID)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer res.Body.Close()
-	bytes, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
+
+	result := &struct {
+		Result  string `json:"result"`
+		FaceURL string `json:"face_url"`
+	}{}
+	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
+		return "", nil
 	}
-	log.Println(string(bytes))
-	return nil
+	return result.FaceURL, nil
 }
 
 func fetch(userID string, page int) (*result, error) {
@@ -67,6 +69,7 @@ func fetch(userID string, page int) (*result, error) {
 		return nil, err
 	}
 	defer res.Body.Close()
+
 	result := &result{}
 	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
 		return nil, err

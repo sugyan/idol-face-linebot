@@ -61,13 +61,14 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("got postback: %s", event.Postback.Data)
 			// <face-id>,<inference-id>
 			ids := strings.Split(event.Postback.Data, ",")
-			if err := inferences.Accept(event.Source.UserID, ids[1]); err != nil {
+			resultURL, err := inferences.Accept(event.Source.UserID, ids[1])
+			if err != nil {
 				log.Printf("accept error: %v", err)
 				continue
 			}
 			if _, err := a.bot.ReplyMessage(
 				event.ReplyToken,
-				linebot.NewTextMessage("更新しました！"),
+				linebot.NewTextMessage("更新しました！ "+resultURL),
 			).Do(); err != nil {
 				log.Printf("send message error: %v", err)
 				continue
