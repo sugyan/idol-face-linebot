@@ -105,7 +105,7 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 		inference := inferences[ids[i]]
 		name := inference.Label.Name
 		if inference.Label.Description != "" {
-			name += " (" + strings.Replace(inference.Label.Description, "\n", ", ", -1) + ")"
+			name += " (" + strings.Replace(inference.Label.Description, "\r\n", ", ", -1) + ")"
 		}
 		columns = append(
 			columns,
