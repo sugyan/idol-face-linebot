@@ -114,7 +114,6 @@ func (call *ReplyMessageCall) Do() (*BasicResponse, error) {
 	if err := call.encodeJSON(&buf); err != nil {
 		return nil, err
 	}
-	println(buf.String())
 	res, err := call.c.post(call.ctx, APIEndpointReplyMessage, &buf)
 	if res != nil && res.Body != nil {
 		defer res.Body.Close()

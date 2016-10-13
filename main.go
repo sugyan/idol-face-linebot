@@ -62,23 +62,32 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			ids := rand.Perm(len(inferences))
-			inference := inferences[ids[0]]
+			num := 5
+			if len(ids) < num {
+				num = len(ids)
+			}
+			columns := make([]*linebot.CarouselColumn, 0, 5)
+			for i := 0; i < num; i++ {
+				inference := inferences[ids[i]]
+				columns = append(
+					columns,
+					linebot.NewCarouselColumn(
+						inference.Face.ImageURL,
+						fmt.Sprintf("id: %d", inference.Face.ID),
+						fmt.Sprintf("%s [%f]", inference.Label.Name, inference.Score),
+						linebot.NewURITemplateAction(
+							"ソースを見る",
+							inference.Face.Photo.SourceURL,
+						),
+						linebot.NewPostbackTemplateAction("あってる", "data", ""),
+					),
+				)
+			}
 			_, err = a.bot.ReplyMessage(
 				event.ReplyToken,
 				linebot.NewTemplateMessage(
 					"template message",
-					linebot.NewCarouselTemplate(
-						linebot.NewCarouselColumn(
-							inference.Face.ImageURL,
-							fmt.Sprintf("face %d", inference.Face.ID),
-							fmt.Sprintf("%s [%f]", inference.Label.Name, inference.Score),
-							linebot.NewURITemplateAction(
-								"ソースを見る",
-								inference.Face.Photo.SourceURL,
-							),
-							linebot.NewPostbackTemplateAction("あってる", "data", ""),
-						),
-					),
+					linebot.NewCarouselTemplate(columns...),
 				),
 			).Do()
 			if err != nil {
