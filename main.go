@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -28,6 +29,7 @@ func main() {
 	}
 	app := &app{bot: bot}
 	http.HandleFunc(os.Getenv("CALLBACK_PATH"), app.handler)
+	http.HandleFunc("/thumbnail", thumbnailHandler)
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
 		log.Fatal(err)
 	}
@@ -107,10 +109,18 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 		if inference.Label.Description != "" {
 			name += " (" + strings.Replace(inference.Label.Description, "\r\n", ", ", -1) + ")"
 		}
+		thumbnailImageURL, err := url.Parse(os.Getenv("APP_URL") + "/thumbnail")
+		if err != nil {
+			return err
+		}
+		values := url.Values{}
+		values.Set("image_url", inference.Face.ImageURL)
+		values.Set("from", inference.Face.Photo.Caption)
+		thumbnailImageURL.RawQuery = values.Encode()
 		columns = append(
 			columns,
 			linebot.NewCarouselColumn(
-				inference.Face.ImageURL,
+				thumbnailImageURL.String(),
 				fmt.Sprintf("id:%d [%.5f]", inference.Face.ID, inference.Score),
 				name,
 				linebot.NewURITemplateAction(
