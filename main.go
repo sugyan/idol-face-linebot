@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -102,6 +103,10 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 	if len(ids) < num {
 		num = len(ids)
 	}
+	re, err := regexp.Compile(` \((@\w+)\): `)
+	if err != nil {
+		return err
+	}
 	columns := make([]*linebot.CarouselColumn, 0, 5)
 	for i := 0; i < num; i++ {
 		inference := inferences[ids[i]]
@@ -115,7 +120,10 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 		}
 		values := url.Values{}
 		values.Set("image_url", inference.Face.ImageURL)
-		values.Set("from", inference.Face.Photo.Caption)
+		submatch := re.FindStringSubmatch(inference.Face.Photo.Caption)
+		if submatch != nil && len(submatch) > 1 {
+			values.Set("from", submatch[1])
+		}
 		thumbnailImageURL.RawQuery = values.Encode()
 		columns = append(
 			columns,
