@@ -105,9 +105,16 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 	columns := make([]*linebot.CarouselColumn, 0, 5)
 	for i := 0; i < num; i++ {
 		inference := inferences[ids[i]]
-		name := inference.Label.Name
+		title := fmt.Sprintf("%d:[%.5f] %s", inference.Face.ID, inference.Score, inference.Label.Name)
 		if inference.Label.Description != "" {
-			name += " (" + strings.Replace(inference.Label.Description, "\r\n", ", ", -1) + ")"
+			title += " (" + strings.Replace(inference.Label.Description, "\r\n", ", ", -1) + ")"
+		}
+		if len(title) > 40 {
+			title = title[0:39] + "…"
+		}
+		text := inference.Face.Photo.Caption
+		if len(text) > 60 {
+			text = text[0:59] + "…"
 		}
 		thumbnailImageURL, err := url.Parse(os.Getenv("APP_URL") + "/thumbnail")
 		if err != nil {
@@ -120,8 +127,8 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 			columns,
 			linebot.NewCarouselColumn(
 				thumbnailImageURL.String(),
-				fmt.Sprintf("%d:[%.5f] %s", inference.Face.ID, inference.Score, name),
-				inference.Face.Photo.Caption,
+				title,
+				text,
 				linebot.NewURITemplateAction(
 					"くわしく",
 					inference.Face.Photo.SourceURL,
