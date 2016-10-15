@@ -6,10 +6,6 @@ import (
 	"image/jpeg"
 	"log"
 	"net/http"
-
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/inconsolata"
-	"golang.org/x/image/math/fixed"
 )
 
 func thumbnailHandler(w http.ResponseWriter, r *http.Request) {
@@ -30,17 +26,8 @@ func thumbnailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// generate new image, draw
-	img := image.NewRGBA(image.Rect(0, 0, 193, 128))
-	draw.Draw(img, image.Rect(0, 0, 112, 112).Add(image.Pt(40, 16)), face, image.Pt(0, 0), draw.Src)
-	drawer := font.Drawer{
-		Dst:  img,
-		Src:  image.White,
-		Face: inconsolata.Regular8x16,
-		Dot: fixed.Point26_6{
-			Y: inconsolata.Regular8x16.Metrics().Ascent,
-		},
-	}
-	drawer.DrawString(query.Get("from"))
+	img := image.NewRGBA(image.Rect(0, 0, 168, 112))
+	draw.Draw(img, image.Rect(0, 0, 112, 112).Add(image.Pt(28, 0)), face, image.Pt(0, 0), draw.Src)
 
 	jpeg.Encode(w, img, &jpeg.Options{Quality: 95})
 }
