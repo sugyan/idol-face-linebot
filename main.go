@@ -116,9 +116,6 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 		if len([]rune(text)) > 50 {
 			text = string([]rune(text)[0:49]) + "…"
 		}
-		log.Println(text)
-		log.Println(len([]rune(text)))
-		log.Println(len(text))
 		thumbnailImageURL, err := url.Parse(os.Getenv("APP_URL") + "/thumbnail")
 		if err != nil {
 			return err
