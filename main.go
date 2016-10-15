@@ -113,9 +113,12 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 			title = string([]rune(title)[0:39]) + "…"
 		}
 		text := inference.Face.Photo.Caption
-		if len([]rune(text)) > 60 {
-			text = string([]rune(text)[0:59]) + "…"
+		if len([]rune(text)) > 50 {
+			text = string([]rune(text)[0:49]) + "…"
 		}
+		log.Println(text)
+		log.Println(len([]rune(text)))
+		log.Println(len(text))
 		thumbnailImageURL, err := url.Parse(os.Getenv("APP_URL") + "/thumbnail")
 		if err != nil {
 			return err
@@ -130,11 +133,15 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 				title,
 				text,
 				linebot.NewURITemplateAction(
-					"くわしく",
+					"元画像",
+					inference.Face.Photo.PhotoURL,
+				),
+				linebot.NewURITemplateAction(
+					"ソース",
 					inference.Face.Photo.SourceURL,
 				),
 				linebot.NewPostbackTemplateAction(
-					"あってる",
+					"OK",
 					strings.Join(
 						[]string{
 							strconv.FormatUint(uint64(inference.Face.ID), 10),
