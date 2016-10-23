@@ -113,8 +113,8 @@ func (a *app) sendCarousel(userID, replyToken string) error {
 			title = string([]rune(title)[0:39]) + "…"
 		}
 		text := inference.Face.Photo.Caption
-		if len([]rune(text)) > 50 {
-			text = string([]rune(text)[0:49]) + "…"
+		if len([]rune(text)) > 60 {
+			text = string([]rune(text)[0:59]) + "…"
 		}
 		thumbnailImageURL, err := url.Parse(os.Getenv("APP_URL") + "/thumbnail")
 		if err != nil {
