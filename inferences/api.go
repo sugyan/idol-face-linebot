@@ -14,14 +14,14 @@ import (
 var endpointBase = os.Getenv("INFERENCES_API_ENDPOINT")
 
 // BulkFetch function
-func BulkFetch(userID string) ([]inference, error) {
+func BulkFetch(userID, query string) ([]inference, error) {
 	ch := make(chan []inference)
 	wg := sync.WaitGroup{}
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func(page int) {
 			defer wg.Done()
-			res, err := fetch(userID, page)
+			res, err := fetch(userID, query, page)
 			if err != nil {
 				log.Println(err)
 				return
@@ -60,8 +60,9 @@ func Accept(userID, inferenceID string) (string, error) {
 	return result.FaceURL, nil
 }
 
-func fetch(userID string, page int) (*result, error) {
+func fetch(userID, query string, page int) (*result, error) {
 	values := url.Values{}
+	values.Add("q", query)
 	values.Add("page", strconv.Itoa(page))
 	url := endpointBase + "/inferences.json?" + values.Encode()
 	res, err := do("GET", url, userID)

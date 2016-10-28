@@ -55,7 +55,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 		case linebot.EventTypeMessage:
 			if message, ok := event.Message.(*linebot.TextMessage); ok {
 				log.Printf("text message from %s: %v", event.Source.UserID, message.Text)
-				if err := a.sendCarousel(event.Source.UserID, event.ReplyToken); err != nil {
+				if err := a.sendCarousel(event.Source.UserID, event.ReplyToken, message.Text); err != nil {
 					log.Printf("send error: %v", err)
 				}
 			}
@@ -89,8 +89,8 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *app) sendCarousel(userID, replyToken string) error {
-	inferences, err := inferences.BulkFetch(userID)
+func (a *app) sendCarousel(userID, replyToken, query string) error {
+	inferences, err := inferences.BulkFetch(userID, query)
 	if err != nil {
 		return err
 	}
