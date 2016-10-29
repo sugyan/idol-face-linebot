@@ -74,7 +74,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 					"template message",
 					linebot.NewConfirmTemplate(
 						fmt.Sprintf("id:%s を更新しました！", ids[0]),
-						linebot.NewMessageTemplateAction("やっぱ違うわ", "やっぱ違うわ"),
+						linebot.NewMessageTemplateAction("やっぱちがう", "やっぱちがう"),
 						linebot.NewURITemplateAction("確認する", resultURL),
 					),
 				),
@@ -130,15 +130,11 @@ func (a *app) sendCarousel(userID, replyToken, query string) error {
 				title,
 				text,
 				linebot.NewURITemplateAction(
-					"元画像",
-					inference.Face.Photo.PhotoURL,
-				),
-				linebot.NewURITemplateAction(
-					"ソース",
+					"情報源を見る",
 					inference.Face.Photo.SourceURL,
 				),
 				linebot.NewPostbackTemplateAction(
-					"OK",
+					"あってる",
 					strings.Join(
 						[]string{
 							strconv.FormatUint(uint64(inference.Face.ID), 10),
@@ -147,6 +143,9 @@ func (a *app) sendCarousel(userID, replyToken, query string) error {
 						",",
 					),
 					"",
+				),
+				linebot.NewMessageTemplateAction(
+					"ちがう", "ちがう",
 				),
 			),
 		)
