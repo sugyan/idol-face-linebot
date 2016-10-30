@@ -55,7 +55,11 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 		case linebot.EventTypeMessage:
 			if message, ok := event.Message.(*linebot.TextMessage); ok {
 				log.Printf("text message from %s: %v", event.Source.UserID, message.Text)
-				if err := a.sendCarousel(event.Source.UserID, event.ReplyToken, message.Text); err != nil {
+				query := message.Text
+				if message.Text == "all" {
+					query = ""
+				}
+				if err := a.sendCarousel(event.Source.UserID, event.ReplyToken, query); err != nil {
 					log.Printf("send error: %v", err)
 				}
 			}
