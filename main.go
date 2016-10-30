@@ -145,7 +145,7 @@ func (a *app) sendCarousel(userID, replyToken, query string) error {
 					"",
 				),
 				linebot.NewMessageTemplateAction(
-					"\xf0\x9f\x99\x85 ちがうね", "ちがうね",
+					"\xf0\x9f\x99\x85 ちがうよ", "ちがうよ",
 				),
 			),
 		)
