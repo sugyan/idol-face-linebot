@@ -1,22 +1,18 @@
-package inferences
+package recognizer
 
 import (
 	"time"
 )
 
-type result struct {
-	Inferences []inference `json:"inferences"`
-}
-
 type inference struct {
-	ID    uint32  `json:"id"`
+	ID    int     `json:"id"`
 	Score float32 `json:"score"`
 	Face  *face   `json:"face"`
 	Label *label  `json:"label"`
 }
 
 type face struct {
-	ID       uint32 `json:"id"`
+	ID       int    `json:"id"`
 	ImageURL string `json:"image_url"`
 	Photo    *photo `json:"photo"`
 }
@@ -29,7 +25,7 @@ type photo struct {
 }
 
 type label struct {
-	ID          uint32 `json:"id"`
+	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Twitter     string `json:"twitter"`

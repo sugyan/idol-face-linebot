@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/sugyan/face-manager-linebot/inferences"
+	"github.com/sugyan/face-manager-linebot/recognizer"
 )
 
 func init() {
@@ -67,7 +67,8 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("got postback: %s", event.Postback.Data)
 			// <face-id>,<inference-id>
 			ids := strings.Split(event.Postback.Data, ",")
-			resultURL, err := inferences.Accept(event.Source.UserID, ids[1])
+			token := os.Getenv("RECOGNIZER_ADMIN_TOKEN") // TODO
+			resultURL, err := recognizer.AcceptInference(event.Source.UserID, token, ids[1])
 			if err != nil {
 				log.Printf("accept error: %v", err)
 				continue
@@ -94,7 +95,16 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) sendCarousel(userID, replyToken, query string) error {
-	inferences, err := inferences.BulkFetch(userID, query)
+	token := os.Getenv("RECOGNIZER_ADMIN_TOKEN") // TODO
+	labels, err := recognizer.Labels(userID, token, query)
+	if err != nil {
+		log.Fatal(err)
+	}
+	labelIDs := []int{}
+	for _, label := range labels {
+		labelIDs = append(labelIDs, label.ID)
+	}
+	inferences, err := recognizer.Inferences(userID, token, labelIDs)
 	if err != nil {
 		return err
 	}
