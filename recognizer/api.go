@@ -1,22 +1,53 @@
 package recognizer
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
-	"os"
+	"path"
 	"strconv"
 )
 
-var endpointBase = os.Getenv("RECOGNIZER_API_ENDPOINT")
+// RegisterUser method
+func (c *Client) RegisterUser(userID, displayName string) (string, error) {
+	u := *c.EndPointBase
+	u.Path = path.Join(c.EndPointBase.Path, "users.json")
+	entity := struct {
+		ScreenName string `json:"screen_name"`
+		Email      string `json:"email"`
+	}{
+		ScreenName: displayName,
+		Email:      userID + "@line.me",
+	}
+	buf := bytes.NewBuffer([]byte{})
+	if err := json.NewEncoder(buf).Encode(entity); err != nil {
+		return "", err
+	}
+	res, err := c.do("POST", u.String(), buf)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	result := struct {
+		AuthenticationToken string `json:"authentication_token"`
+	}{}
+	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
+		return "", err
+	}
+	return result.AuthenticationToken, nil
+}
 
-// Labels function
-func Labels(userID, token, query string) ([]label, error) {
+// Labels method
+func (c *Client) Labels(query string) ([]label, error) {
 	values := url.Values{}
 	values.Add("q", query)
-	url := endpointBase + "/labels.json?" + values.Encode()
-	res, err := do("GET", url, userID, token)
+	u := *c.EndPointBase
+	u.RawQuery = values.Encode()
+	u.Path = path.Join(c.EndPointBase.Path, "labels.json")
+	res, err := c.do("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29,15 +60,16 @@ func Labels(userID, token, query string) ([]label, error) {
 	return results, nil
 }
 
-// Inferences function
-func Inferences(userID, token string, ids []int) ([]inference, error) {
+// Inferences method
+func (c *Client) Inferences(ids []int) ([]inference, error) {
 	values := url.Values{}
 	for _, id := range ids {
-		values.Add("id", strconv.Itoa(id))
+		values.Add("label_id[]", strconv.Itoa(id))
 	}
-	// values.Add("q", query)
-	url := endpointBase + "/inferences.json?" + values.Encode()
-	res, err := do("GET", url, userID, token)
+	u := *c.EndPointBase
+	u.RawQuery = values.Encode()
+	u.Path = path.Join(c.EndPointBase.Path, "inferences.json")
+	res, err := c.do("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52,10 +84,11 @@ func Inferences(userID, token string, ids []int) ([]inference, error) {
 	return result.Inferences, nil
 }
 
-// AcceptInference function
-func AcceptInference(userID, token, inferenceID string) (string, error) {
-	url := endpointBase + "/inferences/" + inferenceID + "/accept.json?"
-	res, err := do("POST", url, userID, token)
+// AcceptInference method
+func (c *Client) AcceptInference(inferenceID string) (string, error) {
+	u := *c.EndPointBase
+	u.Path = path.Join(c.EndPointBase.Path, "inferences", inferenceID, "accept.json")
+	res, err := c.do("POST", u.String(), nil)
 	if err != nil {
 		return "", err
 	}
@@ -71,14 +104,15 @@ func AcceptInference(userID, token, inferenceID string) (string, error) {
 	return result.FaceURL, nil
 }
 
-func do(method, url, userID, token string) (*http.Response, error) {
-	req, err := http.NewRequest(method, url, nil)
+func (c *Client) do(method, urlStr string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, urlStr, body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("X-User-Token", token)
-	req.Header.Set("X-User-Email", userID+"@line.me")
-	res, err := http.DefaultClient.Do(req)
+	req.Header.Set("X-User-Email", c.AuthenticationEmail)
+	req.Header.Set("X-User-Token", c.AuthenticationToken)
+	req.Header.Set("Content-Type", "application/json; charset=UTF-8")
+	res, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

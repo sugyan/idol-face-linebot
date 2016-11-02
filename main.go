@@ -27,7 +27,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	app := &app{bot: bot}
+	app := &app{
+		bot: bot,
+		config: recognizerConfig{
+			EndpointBase: os.Getenv("RECOGNIZER_API_ENDPOINT"),
+			AdminEmail:   os.Getenv("RECOGNIZER_ADMIN_EMAIL"),
+			AdminToken:   os.Getenv("RECOGNIZER_ADMIN_TOKEN"),
+		},
+	}
 	http.HandleFunc(os.Getenv("CALLBACK_PATH"), app.handler)
 	http.HandleFunc("/thumbnail", thumbnailHandler)
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
@@ -36,7 +43,14 @@ func main() {
 }
 
 type app struct {
-	bot *linebot.Client
+	bot    *linebot.Client
+	config recognizerConfig
+}
+
+type recognizerConfig struct {
+	EndpointBase string
+	AdminEmail   string
+	AdminToken   string
 }
 
 func (a *app) handler(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +65,14 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("not from user: %v", event)
 			continue
 		}
+		userID := event.Source.UserID
 		switch event.Type {
+		case linebot.EventTypeFollow:
+			token, err := a.getRecognizerToken(userID)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("token: %v", token)
 		case linebot.EventTypeMessage:
 			if message, ok := event.Message.(*linebot.TextMessage); ok {
 				log.Printf("text message from %s: %v", event.Source.UserID, message.Text)
@@ -65,10 +86,17 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			}
 		case linebot.EventTypePostback:
 			log.Printf("got postback: %s", event.Postback.Data)
+			token, err := a.getRecognizerToken(userID)
+			if err != nil {
+				log.Fatal(err)
+			}
+			client, err := recognizer.NewClient(a.config.EndpointBase, userID+"@line.me", token)
+			if err != nil {
+				log.Fatal(err)
+			}
 			// <face-id>,<inference-id>
 			ids := strings.Split(event.Postback.Data, ",")
-			token := os.Getenv("RECOGNIZER_ADMIN_TOKEN") // TODO
-			resultURL, err := recognizer.AcceptInference(event.Source.UserID, token, ids[1])
+			resultURL, err := client.AcceptInference(ids[1])
 			if err != nil {
 				log.Printf("accept error: %v", err)
 				continue
@@ -95,16 +123,23 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) sendCarousel(userID, replyToken, query string) error {
-	token := os.Getenv("RECOGNIZER_ADMIN_TOKEN") // TODO
-	labels, err := recognizer.Labels(userID, token, query)
+	token, err := a.getRecognizerToken(userID)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	client, err := recognizer.NewClient(a.config.EndpointBase, userID+"@line.me", token)
+	if err != nil {
+		return err
+	}
+	labels, err := client.Labels(query)
+	if err != nil {
+		return err
 	}
 	labelIDs := []int{}
 	for _, label := range labels {
 		labelIDs = append(labelIDs, label.ID)
 	}
-	inferences, err := recognizer.Inferences(userID, token, labelIDs)
+	inferences, err := client.Inferences(labelIDs)
 	if err != nil {
 		return err
 	}
@@ -171,4 +206,22 @@ func (a *app) sendCarousel(userID, replyToken, query string) error {
 		return err
 	}
 	return nil
+}
+
+func (a *app) getRecognizerToken(userID string) (string, error) {
+	// get profile
+	profile, err := a.bot.GetProfile(userID).Do()
+	if err != nil {
+		return "", err
+	}
+	// register user and get authentication token as admin
+	client, err := recognizer.NewClient(a.config.EndpointBase, a.config.AdminEmail, a.config.AdminToken)
+	if err != nil {
+		return "", err
+	}
+	token, err := client.RegisterUser(userID, profile.DisplayName)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
