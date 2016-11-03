@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -68,7 +67,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 				if message.Text == "all" {
 					query = ""
 				}
-				if err := a.sendCarousel(event.Source.UserID, event.ReplyToken, query); err != nil {
+				if err := a.sendInferences(event.Source.UserID, event.ReplyToken, query); err != nil {
 					log.Printf("send error: %v", err)
 				}
 			}
@@ -110,7 +109,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *app) sendCarousel(userID, replyToken, query string) error {
+func (a *app) sendInferences(userID, replyToken, query string) error {
 	token, err := a.retrieveUserToken(userID)
 	if err != nil {
 		return err
@@ -119,21 +118,31 @@ func (a *app) sendCarousel(userID, replyToken, query string) error {
 	if err != nil {
 		return err
 	}
-	labels, err := client.Labels(query)
-	if err != nil {
-		return err
-	}
+
 	labelIDs := []int{}
-	for _, label := range labels {
-		labelIDs = append(labelIDs, label.ID)
+	if query != "" {
+		labels, err := client.Labels(query)
+		if err != nil {
+			return err
+		}
+		if len(labels) == 0 {
+			log.Println("empty labels")
+			_, err := a.bot.ReplyMessage(
+				replyToken,
+				linebot.NewTextMessage("識別対象のアイドルの名前ではないようです\xf0\x9f\x98\x9e"),
+			).Do()
+			return err
+		}
+		for _, label := range labels {
+			labelIDs = append(labelIDs, label.ID)
+		}
 	}
-	inferences, err := client.Inferences(labelIDs)
+	result, err := client.Inferences(labelIDs)
 	if err != nil {
 		return err
 	}
-	if len(inferences) < 1 {
-		return errors.New("empty inferences")
-	}
+	inferences := result.Inferences
+	totalCount := result.Page.TotalCount
 	ids := rand.Perm(len(inferences))
 	num := 5
 	if len(ids) < num {
@@ -189,6 +198,7 @@ func (a *app) sendCarousel(userID, replyToken, query string) error {
 	}
 	if _, err = a.bot.ReplyMessage(
 		replyToken,
+		linebot.NewTextMessage(fmt.Sprintf("%d件の候補があります\xf0\x9f\x98\x80", totalCount)),
 		linebot.NewTemplateMessage("template message", linebot.NewCarouselTemplate(columns...)),
 	).Do(); err != nil {
 		return err

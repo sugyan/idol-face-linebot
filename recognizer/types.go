@@ -4,6 +4,14 @@ import (
 	"time"
 )
 
+// InferencesResult type
+type InferencesResult struct {
+	Inferences []inference `json:"inferences"`
+	Page       struct {
+		TotalCount int `json:"total_count"`
+	} `json:"page"`
+}
+
 type inference struct {
 	ID    int     `json:"id"`
 	Score float32 `json:"score"`

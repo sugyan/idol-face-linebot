@@ -61,7 +61,7 @@ func (c *Client) Labels(query string) ([]label, error) {
 }
 
 // Inferences method
-func (c *Client) Inferences(ids []int) ([]inference, error) {
+func (c *Client) Inferences(ids []int) (*InferencesResult, error) {
 	values := url.Values{}
 	values.Add("min_score", "0.5")
 	for _, id := range ids {
@@ -76,13 +76,11 @@ func (c *Client) Inferences(ids []int) ([]inference, error) {
 	}
 	defer res.Body.Close()
 
-	result := &struct {
-		Inferences []inference `json:"inferences"`
-	}{}
+	result := &InferencesResult{}
 	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
 		return nil, err
 	}
-	return result.Inferences, nil
+	return result, nil
 }
 
 // AcceptInference method
