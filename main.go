@@ -88,12 +88,13 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 				log.Printf("accept error: %v", err)
 				continue
 			}
+			messageText := fmt.Sprintf("id:%s を更新しました！", ids[0])
 			if _, err := a.bot.ReplyMessage(
 				event.ReplyToken,
 				linebot.NewTemplateMessage(
-					"template message",
+					messageText,
 					linebot.NewConfirmTemplate(
-						fmt.Sprintf("id:%s を更新しました！", ids[0]),
+						messageText,
 						linebot.NewMessageTemplateAction("やっぱちがう", "やっぱちがう"),
 						linebot.NewURITemplateAction("確認する", resultURL),
 					),
@@ -196,10 +197,19 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 			),
 		)
 	}
+	titles := []string{}
+	for _, column := range columns {
+		titles = append(titles, column.Title)
+	}
 	if _, err = a.bot.ReplyMessage(
 		replyToken,
-		linebot.NewTextMessage(fmt.Sprintf("%d件の候補があります\xf0\x9f\x98\x80", totalCount)),
-		linebot.NewTemplateMessage("template message", linebot.NewCarouselTemplate(columns...)),
+		linebot.NewTextMessage(
+			fmt.Sprintf("%d件の候補があります\xf0\x9f\x98\x80", totalCount),
+		),
+		linebot.NewTemplateMessage(
+			strings.Join(titles, "\n"),
+			linebot.NewCarouselTemplate(columns...),
+		),
 	).Do(); err != nil {
 		return err
 	}
