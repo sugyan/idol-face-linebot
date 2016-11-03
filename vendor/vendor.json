@@ -25,6 +25,48 @@
 			"path": "golang.org/x/net/context/ctxhttp",
 			"revision": "f4b625ec9b21d620bb5ce57f2dfc3e08ca97fce6",
 			"revisionTime": "2016-10-05T16:48:53Z"
+		},
+		{
+			"checksumSHA1": "+4r0PnLwwyhO5/jvU5R/TEJb4kA=",
+			"path": "gopkg.in/bsm/ratelimit.v1",
+			"revision": "db14e161995a5177acef654cb0dd785e8ee8bc22",
+			"revisionTime": "2016-02-20T15:49:07Z"
+		},
+		{
+			"checksumSHA1": "rr5P5knxMTqvnRElnvlrM4dyuQM=",
+			"path": "gopkg.in/redis.v5",
+			"revision": "80cf5d1652d5590c35edc6c2dc1aa354790e3010",
+			"revisionTime": "2016-10-24T09:52:32Z"
+		},
+		{
+			"checksumSHA1": "vQSE4FOH4EvyzYA72w60XOetmVY=",
+			"path": "gopkg.in/redis.v5/internal",
+			"revision": "80cf5d1652d5590c35edc6c2dc1aa354790e3010",
+			"revisionTime": "2016-10-24T09:52:32Z"
+		},
+		{
+			"checksumSHA1": "2Ek4SixeRSKOX3mUiBMs3Aw+Guc=",
+			"path": "gopkg.in/redis.v5/internal/consistenthash",
+			"revision": "80cf5d1652d5590c35edc6c2dc1aa354790e3010",
+			"revisionTime": "2016-10-24T09:52:32Z"
+		},
+		{
+			"checksumSHA1": "rJYVKcBrwYUGl7nuuusmZGrt8mY=",
+			"path": "gopkg.in/redis.v5/internal/hashtag",
+			"revision": "80cf5d1652d5590c35edc6c2dc1aa354790e3010",
+			"revisionTime": "2016-10-24T09:52:32Z"
+		},
+		{
+			"checksumSHA1": "MuVVHw/uzk6gwBsQ8deMYacmgTM=",
+			"path": "gopkg.in/redis.v5/internal/pool",
+			"revision": "80cf5d1652d5590c35edc6c2dc1aa354790e3010",
+			"revisionTime": "2016-10-24T09:52:32Z"
+		},
+		{
+			"checksumSHA1": "Pn4Vc2X2hUhm0SV7j82YlMW8j5o=",
+			"path": "gopkg.in/redis.v5/internal/proto",
+			"revision": "80cf5d1652d5590c35edc6c2dc1aa354790e3010",
+			"revisionTime": "2016-10-24T09:52:32Z"
 		}
 	],
 	"rootPath": "github.com/sugyan/face-manager-linebot"

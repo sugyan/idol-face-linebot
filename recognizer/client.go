@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 // Client type
@@ -15,14 +16,14 @@ type Client struct {
 }
 
 // NewClient function
-func NewClient(endpoint, email, token string) (*Client, error) {
+func NewClient(email, token string) (*Client, error) {
 	if len(email) == 0 {
 		return nil, errors.New("missing email")
 	}
 	if len(token) == 0 {
 		return nil, errors.New("missing token")
 	}
-	parsedURL, err := url.ParseRequestURI(endpoint)
+	parsedURL, err := url.Parse(os.Getenv("RECOGNIZER_API_ENDPOINT"))
 	if err != nil {
 		return nil, err
 	}

@@ -29,11 +29,6 @@ func main() {
 	}
 	app := &app{
 		bot: bot,
-		config: recognizerConfig{
-			EndpointBase: os.Getenv("RECOGNIZER_API_ENDPOINT"),
-			AdminEmail:   os.Getenv("RECOGNIZER_ADMIN_EMAIL"),
-			AdminToken:   os.Getenv("RECOGNIZER_ADMIN_TOKEN"),
-		},
 	}
 	http.HandleFunc(os.Getenv("CALLBACK_PATH"), app.handler)
 	http.HandleFunc("/thumbnail", thumbnailHandler)
@@ -43,14 +38,7 @@ func main() {
 }
 
 type app struct {
-	bot    *linebot.Client
-	config recognizerConfig
-}
-
-type recognizerConfig struct {
-	EndpointBase string
-	AdminEmail   string
-	AdminToken   string
+	bot *linebot.Client
 }
 
 func (a *app) handler(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +56,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 		userID := event.Source.UserID
 		switch event.Type {
 		case linebot.EventTypeFollow:
-			token, err := a.getRecognizerToken(userID)
+			token, err := a.retrieveUserToken(userID)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -86,11 +74,11 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 			}
 		case linebot.EventTypePostback:
 			log.Printf("got postback: %s", event.Postback.Data)
-			token, err := a.getRecognizerToken(userID)
+			token, err := a.retrieveUserToken(userID)
 			if err != nil {
 				log.Fatal(err)
 			}
-			client, err := recognizer.NewClient(a.config.EndpointBase, userID+"@line.me", token)
+			client, err := recognizer.NewClient(userID+"@line.me", token)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -123,11 +111,11 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) sendCarousel(userID, replyToken, query string) error {
-	token, err := a.getRecognizerToken(userID)
+	token, err := a.retrieveUserToken(userID)
 	if err != nil {
 		return err
 	}
-	client, err := recognizer.NewClient(a.config.EndpointBase, userID+"@line.me", token)
+	client, err := recognizer.NewClient(userID+"@line.me", token)
 	if err != nil {
 		return err
 	}
@@ -206,22 +194,4 @@ func (a *app) sendCarousel(userID, replyToken, query string) error {
 		return err
 	}
 	return nil
-}
-
-func (a *app) getRecognizerToken(userID string) (string, error) {
-	// get profile
-	profile, err := a.bot.GetProfile(userID).Do()
-	if err != nil {
-		return "", err
-	}
-	// register user and get authentication token as admin
-	client, err := recognizer.NewClient(a.config.EndpointBase, a.config.AdminEmail, a.config.AdminToken)
-	if err != nil {
-		return "", err
-	}
-	token, err := client.RegisterUser(userID, profile.DisplayName)
-	if err != nil {
-		return "", err
-	}
-	return token, nil
 }
