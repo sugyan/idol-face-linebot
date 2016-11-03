@@ -63,6 +63,7 @@ func (c *Client) Labels(query string) ([]label, error) {
 // Inferences method
 func (c *Client) Inferences(ids []int) ([]inference, error) {
 	values := url.Values{}
+	values.Add("min_score", "0.5")
 	for _, id := range ids {
 		values.Add("label_id[]", strconv.Itoa(id))
 	}
