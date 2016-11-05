@@ -152,7 +152,7 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 	columns := make([]*linebot.CarouselColumn, 0, 5)
 	for i := 0; i < num; i++ {
 		inference := inferences[ids[i]]
-		title := fmt.Sprintf("%d:[%.5f] %s", inference.Face.ID, inference.Score, inference.Label.Name)
+		title := fmt.Sprintf("%d:[%.2f] %s", inference.Face.ID, inference.Score*100.0, inference.Label.Name)
 		if inference.Label.Description != "" {
 			title += " (" + strings.Replace(inference.Label.Description, "\r\n", ", ", -1) + ")"
 		}
