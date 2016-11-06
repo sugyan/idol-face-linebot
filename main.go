@@ -24,7 +24,8 @@ func main() {
 		log.Fatal(err)
 	}
 	http.HandleFunc(os.Getenv("CALLBACK_PATH"), app.handler)
-	http.HandleFunc("/thumbnail", thumbnailHandler)
+	http.HandleFunc("/thumbnail", thumbnailImageHandler)
+	http.HandleFunc("/crop", cropImageHandler)
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
 		log.Fatal(err)
 	}

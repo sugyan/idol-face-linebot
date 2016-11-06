@@ -1,16 +1,15 @@
 package recognizer
 
 import (
+	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
 )
 
 // RecognizeFaces function
-func (c *Client) RecognizeFaces(photoURL string) error {
-	// fetch from recognizer API
+func (c *Client) RecognizeFaces(photoURL string) (*RecognizedResults, error) {
 	values := url.Values{}
 	values.Set("image_url", photoURL)
 	u := *c.EndPointBase
@@ -18,22 +17,21 @@ func (c *Client) RecognizeFaces(photoURL string) error {
 	u.RawQuery = values.Encode()
 	res, err := c.do("GET", u.String(), nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return errors.New(res.Status)
+		return nil, errors.New(res.Status)
 	}
-	// TODO
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
+	result := &RecognizedResults{}
+	if err := json.NewDecoder(res.Body).Decode(result); err != nil {
+		return nil, err
 	}
-	println(string(b))
-	return nil
+	return result, nil
 }
 
-type recognizeResult struct {
+// RecognizedResults type
+type RecognizedResults struct {
 	Faces []struct {
 		Bounding []struct {
 			X int `json:"x"`
