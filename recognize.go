@@ -12,8 +12,8 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
-func (a *app) recognizeFaces(photoURL, replyToken string) error {
-	result, err := a.recognizerAdmin.RecognizeFaces(photoURL)
+func (a *app) recognizeFaces(imageURL, replyToken string) error {
+	result, err := a.recognizerAdmin.RecognizeFaces(imageURL)
 	if err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func (a *app) recognizeFaces(photoURL, replyToken string) error {
 			}
 			text := fmt.Sprintf("%s [%.2f]", name, top.Value*100.0)
 			values := url.Values{}
-			values.Set("image_url", photoURL)
+			values.Set("image_url", imageURL)
 			xMin := math.MaxInt32
 			xMax := math.MinInt32
 			yMin := math.MaxInt32

@@ -24,8 +24,9 @@ func (a *app) handleMessage(event *linebot.Event) error {
 			return fmt.Errorf("send error: %v", err)
 		}
 	case *linebot.ImageMessage:
-		log.Printf("image message from %v: %v", event.Source, message.PreviewImageURL)
-		if err := a.recognizeFaces(message.OriginalContentURL, event.ReplyToken); err != nil {
+		log.Printf("image message from %v: %s", event.Source, message.ID)
+		imageURL := "" // TODO
+		if err := a.recognizeFaces(imageURL, event.ReplyToken); err != nil {
 			return fmt.Errorf("recognize image error: %v", err)
 		}
 	}
