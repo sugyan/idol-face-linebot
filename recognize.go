@@ -12,7 +12,7 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
-func (a *app) recognizeFaces(photoURL string) error {
+func (a *app) recognizeFaces(photoURL, replyToken string) error {
 	result, err := a.recognizerAdmin.RecognizeFaces(photoURL)
 	if err != nil {
 		return err
@@ -63,6 +63,16 @@ func (a *app) recognizeFaces(photoURL string) error {
 				text,
 			))
 		}
+	}
+	_, err = a.linebot.ReplyMessage(
+		replyToken,
+		linebot.NewTemplateMessage(
+			"altText",
+			linebot.NewCarouselTemplate(columns...),
+		),
+	).Do()
+	if err != nil {
+		return err
 	}
 	return nil
 }
