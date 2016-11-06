@@ -19,15 +19,9 @@ func init() {
 }
 
 func main() {
-	bot, err := linebot.New(
-		os.Getenv("CHANNEL_SECRET"),
-		os.Getenv("CHANNEL_TOKEN"),
-	)
+	app, err := newApp()
 	if err != nil {
 		log.Fatal(err)
-	}
-	app := &app{
-		bot: bot,
 	}
 	http.HandleFunc(os.Getenv("CALLBACK_PATH"), app.handler)
 	http.HandleFunc("/thumbnail", thumbnailHandler)
@@ -36,12 +30,8 @@ func main() {
 	}
 }
 
-type app struct {
-	bot *linebot.Client
-}
-
 func (a *app) handler(w http.ResponseWriter, r *http.Request) {
-	events, err := a.bot.ParseRequest(r)
+	events, err := a.linebot.ParseRequest(r)
 	if err != nil {
 		log.Printf("parse request error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -89,7 +79,7 @@ func (a *app) handler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			messageText := fmt.Sprintf("id:%s を更新しました！", ids[0])
-			if _, err := a.bot.ReplyMessage(
+			if _, err := a.linebot.ReplyMessage(
 				event.ReplyToken,
 				linebot.NewTemplateMessage(
 					messageText,
@@ -128,7 +118,7 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 		}
 		if len(labels) == 0 {
 			log.Println("empty labels")
-			_, err := a.bot.ReplyMessage(
+			_, err := a.linebot.ReplyMessage(
 				replyToken,
 				linebot.NewTextMessage("識別対象のアイドルの名前ではないようです\xf0\x9f\x98\x9e"),
 			).Do()
@@ -201,7 +191,7 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 	for _, column := range columns {
 		titles = append(titles, column.Title)
 	}
-	if _, err = a.bot.ReplyMessage(
+	if _, err = a.linebot.ReplyMessage(
 		replyToken,
 		linebot.NewTextMessage(
 			fmt.Sprintf("%d件の候補があります\xf0\x9f\x98\x80", totalCount),
