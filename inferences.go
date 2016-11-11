@@ -84,7 +84,7 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 					inference.Face.Photo.SourceURL,
 				),
 				linebot.NewPostbackTemplateAction(
-					"\xf0\x9f\x99\x86 あってる",
+					"\xe2\xad\x95 あってる",
 					strings.Join(
 						[]string{
 							strconv.FormatUint(uint64(inference.Face.ID), 10),
@@ -95,7 +95,7 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 					"",
 				),
 				linebot.NewMessageTemplateAction(
-					"\xf0\x9f\x99\x85 ちがうよ", "ちがうよ",
+					"\xe2\x9d\x8c ちがうよ", "ちがうよ",
 				),
 			),
 		)

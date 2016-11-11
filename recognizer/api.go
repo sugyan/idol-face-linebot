@@ -84,23 +84,22 @@ func (c *Client) Inferences(ids []int) (*InferencesResult, error) {
 }
 
 // AcceptInference method
-func (c *Client) AcceptInference(inferenceID string) (string, error) {
+func (c *Client) AcceptInference(inferenceID string) error {
 	u := *c.EndPointBase
 	u.Path = path.Join(c.EndPointBase.Path, "inferences", inferenceID, "accept.json")
 	res, err := c.do("POST", u.String(), nil)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer res.Body.Close()
 
 	result := &struct {
-		Result  string `json:"result"`
-		FaceURL string `json:"face_url"`
+		Result string `json:"result"`
 	}{}
 	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
-		return "", nil
+		return err
 	}
-	return result.FaceURL, nil
+	return nil
 }
 
 func (c *Client) do(method, urlStr string, body io.Reader) (*http.Response, error) {

@@ -50,21 +50,12 @@ func (a *app) handlePostback(event *linebot.Event) error {
 	}
 	// <face-id>,<inference-id>
 	ids := strings.Split(event.Postback.Data, ",")
-	resultURL, err := client.AcceptInference(ids[1])
-	if err != nil {
+	if err := client.AcceptInference(ids[1]); err != nil {
 		return fmt.Errorf("accept error: %v", err)
 	}
-	messageText := fmt.Sprintf("id:%s を更新しました！", ids[0])
 	if _, err := a.linebot.ReplyMessage(
 		event.ReplyToken,
-		linebot.NewTemplateMessage(
-			messageText,
-			linebot.NewConfirmTemplate(
-				messageText,
-				linebot.NewMessageTemplateAction("やっぱちがう", "やっぱちがう"),
-				linebot.NewURITemplateAction("確認する", resultURL),
-			),
-		),
+		linebot.NewTextMessage(fmt.Sprintf("id:%s を更新しました！ \xf0\x9f\x99\x86", ids[0])),
 	).Do(); err != nil {
 		return fmt.Errorf("send message error: %v", err)
 	}
