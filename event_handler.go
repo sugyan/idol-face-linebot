@@ -1,13 +1,26 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/face-manager-linebot/recognizer"
 )
+
+type postbackAction string
+
+const (
+	postbackActionAccept = "accept"
+	postbackActionReject = "reject"
+)
+
+type postbackData struct {
+	Action      postbackAction `json:"action"`
+	FaceID      int            `json:"face_id"`
+	InferenceID int            `json:"inference_id"`
+}
 
 func (a *app) handleMessage(event *linebot.Event) error {
 	switch message := event.Message.(type) {
@@ -48,14 +61,28 @@ func (a *app) handlePostback(event *linebot.Event) error {
 	if err != nil {
 		return err
 	}
-	// <face-id>,<inference-id>
-	ids := strings.Split(event.Postback.Data, ",")
-	if err := client.AcceptInference(ids[1]); err != nil {
-		return fmt.Errorf("accept error: %v", err)
+	// unmarshal data
+	data := &postbackData{}
+	if err := json.Unmarshal([]byte(event.Postback.Data), data); err != nil {
+		return err
+	}
+	// accept or reject
+	message := fmt.Sprintf("id:%dを更新しました", data.FaceID)
+	switch data.Action {
+	case postbackActionAccept:
+		if err := client.AcceptInference(data.InferenceID); err != nil {
+			return fmt.Errorf("accept error: %v", err)
+		}
+		message += "\xf0\x9f\x99\x86"
+	case postbackActionReject:
+		if err := client.RejectInference(data.InferenceID); err != nil {
+			return fmt.Errorf("reject error: %v", err)
+		}
+		message += "\xf0\x9f\x99\x85"
 	}
 	if _, err := a.linebot.ReplyMessage(
 		event.ReplyToken,
-		linebot.NewTextMessage(fmt.Sprintf("id:%s を更新しました！ \xf0\x9f\x99\x86", ids[0])),
+		linebot.NewTextMessage(message),
 	).Do(); err != nil {
 		return fmt.Errorf("send message error: %v", err)
 	}

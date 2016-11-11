@@ -84,9 +84,28 @@ func (c *Client) Inferences(ids []int) (*InferencesResult, error) {
 }
 
 // AcceptInference method
-func (c *Client) AcceptInference(inferenceID string) error {
+func (c *Client) AcceptInference(inferenceID int) error {
 	u := *c.EndPointBase
-	u.Path = path.Join(c.EndPointBase.Path, "inferences", inferenceID, "accept.json")
+	u.Path = path.Join(c.EndPointBase.Path, "inferences", strconv.Itoa(inferenceID), "accept.json")
+	res, err := c.do("POST", u.String(), nil)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	result := &struct {
+		Result string `json:"result"`
+	}{}
+	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
+		return err
+	}
+	return nil
+}
+
+// RejectInference method
+func (c *Client) RejectInference(inferenceID int) error {
+	u := *c.EndPointBase
+	u.Path = path.Join(c.EndPointBase.Path, "inferences", strconv.Itoa(inferenceID), "reject.json")
 	res, err := c.do("POST", u.String(), nil)
 	if err != nil {
 		return err

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/line/line-bot-sdk-go/linebot"
@@ -73,6 +73,19 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 		values := url.Values{}
 		values.Set("image_url", inference.Face.ImageURL)
 		thumbnailImageURL.RawQuery = values.Encode()
+		accept, _ := json.Marshal(postbackData{
+			Action:      postbackActionAccept,
+			FaceID:      inference.Face.ID,
+			InferenceID: inference.ID,
+		})
+		reject, _ := json.Marshal(postbackData{
+			Action:      postbackActionReject,
+			FaceID:      inference.Face.ID,
+			InferenceID: inference.ID,
+		})
+		if err != nil {
+			return err
+		}
 		columns = append(
 			columns,
 			linebot.NewCarouselColumn(
@@ -83,20 +96,8 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 					"\xf0\x9f\x94\x8d くわしく",
 					inference.Face.Photo.SourceURL,
 				),
-				linebot.NewPostbackTemplateAction(
-					"\xe2\xad\x95 あってる",
-					strings.Join(
-						[]string{
-							strconv.FormatUint(uint64(inference.Face.ID), 10),
-							strconv.FormatUint(uint64(inference.ID), 10),
-						},
-						",",
-					),
-					"",
-				),
-				linebot.NewMessageTemplateAction(
-					"\xe2\x9d\x8c ちがうよ", "ちがうよ",
-				),
+				linebot.NewPostbackTemplateAction("\xe2\xad\x95 あってる", string(accept), ""),
+				linebot.NewPostbackTemplateAction("\xe2\x9d\x8c ちがうよ", string(reject), ""),
 			),
 		)
 	}
