@@ -94,10 +94,13 @@ func (c *Client) AcceptInference(inferenceID int) error {
 	defer res.Body.Close()
 
 	result := &struct {
-		Result string `json:"result"`
+		Success bool `json:"success"`
 	}{}
 	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
 		return err
+	}
+	if !result.Success {
+		return errors.New("accept failed")
 	}
 	return nil
 }
@@ -113,10 +116,13 @@ func (c *Client) RejectInference(inferenceID int) error {
 	defer res.Body.Close()
 
 	result := &struct {
-		Result string `json:"result"`
+		Success bool `json:"success"`
 	}{}
 	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
 		return err
+	}
+	if !result.Success {
+		return errors.New("reject failed")
 	}
 	return nil
 }
