@@ -67,18 +67,22 @@ func (a *app) handlePostback(event *linebot.Event) error {
 		return err
 	}
 	// accept or reject
-	message := fmt.Sprintf("id:%dを更新しました", data.FaceID)
+	var message string
 	switch data.Action {
 	case postbackActionAccept:
 		if err := client.AcceptInference(data.InferenceID); err != nil {
-			return fmt.Errorf("accept error: %v", err)
+			log.Printf("accept error: %v", err)
+			message = "処理できませんでした\xf0\x9f\x98\x9e"
+		} else {
+			message = fmt.Sprintf("id:%dを更新しました\xf0\x9f\x99\x86", data.FaceID)
 		}
-		message += "\xf0\x9f\x99\x86"
 	case postbackActionReject:
 		if err := client.RejectInference(data.InferenceID); err != nil {
-			return fmt.Errorf("reject error: %v", err)
+			log.Printf("reject error: %v", err)
+			message = "処理できませんでした\xf0\x9f\x98\x9e"
+		} else {
+			message = fmt.Sprintf("id:%dを更新しました\xf0\x9f\x99\x85", data.FaceID)
 		}
-		message += "\xf0\x9f\x99\x85"
 	}
 	if _, err := a.linebot.ReplyMessage(
 		event.ReplyToken,
