@@ -1,12 +1,14 @@
 package main
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/hex"
 	"net/url"
 	"os"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/face-manager-linebot/recognizer"
-
 	"gopkg.in/redis.v5"
 )
 
@@ -14,6 +16,7 @@ type app struct {
 	linebot         *linebot.Client
 	redis           *redis.Client
 	recognizerAdmin *recognizer.Client
+	cipherBlock     cipher.Block
 }
 
 func newApp() (*app, error) {
@@ -43,10 +46,19 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// cipher
+	key, err := hex.DecodeString(os.Getenv("CHANNEL_SECRET"))
+	if err != nil {
+		return nil, err
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
 	return &app{
 		linebot:         linebotClient,
 		redis:           redisClient,
 		recognizerAdmin: recognizerAdminClient,
+		cipherBlock:     block,
 	}, nil
 }
