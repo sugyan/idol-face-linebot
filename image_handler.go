@@ -13,25 +13,32 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-
-	"github.com/line/line-bot-sdk-go/linebot"
 )
 
 func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
-	res, err := a.handleGetContentRequest(r)
+	file, err := a.getImageFile(r)
 	if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", res.ContentType)
-	w.Header().Set("Content-Length", strconv.FormatInt(res.ContentLength, 10))
-	if _, err := io.Copy(w, res.Content); err != nil {
+	defer os.Remove(file.Name())
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Print(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Length", strconv.Itoa(len(bytes)))
+	written, err := w.Write(bytes)
+	if err != nil {
 		log.Print(err.Error())
 	}
+	log.Printf("written %d bytes.", written)
 }
 
-func (a *app) handleGetContentRequest(r *http.Request) (*linebot.MessageContentResponse, error) {
+func (a *app) getImageFile(r *http.Request) (*os.File, error) {
 	query := r.URL.Query()
 	key := query.Get("key")
 	messageID, err := a.decrypt(key)
@@ -43,7 +50,29 @@ func (a *app) handleGetContentRequest(r *http.Request) (*linebot.MessageContentR
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	// download to tempfile
+	tmp, err := ioutil.TempFile("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(tmp.Name())
+
+	written, err := io.Copy(tmp, res.Content)
+	if err != nil {
+		return nil, err
+	}
+	if written != res.ContentLength {
+		return nil, fmt.Errorf("content lengths mismatch. (%d:%d)", written, res.ContentLength)
+	}
+	// convert to jpeg file
+	file, err := ioutil.TempFile("", "")
+	if err != nil {
+		return nil, err
+	}
+	if err := exec.Command("convert", "-resize", "1600x1600>", tmp.Name(), file.Name()).Run(); err != nil {
+		return nil, err
+	}
+	return file, nil
 }
 
 func thumbnailImageHandler(w http.ResponseWriter, r *http.Request) {
