@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"strings"
 )
 
 func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
