@@ -35,7 +35,7 @@ func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print(err.Error())
 	}
-	log.Printf("written %d bytes.", written)
+	log.Printf("sent %d bytes.", written)
 }
 
 func (a *app) getImageFile(r *http.Request) (*os.File, error) {
@@ -69,7 +69,30 @@ func (a *app) getImageFile(r *http.Request) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := exec.Command("convert", "-resize", "1600x1600>", tmp.Name(), file.Name()).Run(); err != nil {
+	srt := query.Get("srt")
+	w := query.Get("w")
+	h := query.Get("h")
+	var command *exec.Cmd
+	if len(srt) > 0 && len(w) > 0 && len(h) > 0 {
+		xSize, _ := strconv.Atoi(w)
+		ySize, _ := strconv.Atoi(h)
+		command = exec.Command(
+			"convert",
+			"-background", "black",
+			"-virtual-pixel", "background",
+			"-distort", "SRT", srt,
+			"-crop", fmt.Sprintf("%dx%d+0+0", xSize, ySize),
+			"-extent", fmt.Sprintf("%dx%d-%d+0", int(float64(xSize)*1.51+0.5), ySize, int(float64(xSize)*0.51*0.5+0.5)),
+			tmp.Name(), file.Name(),
+		)
+	} else {
+		command = exec.Command(
+			"convert",
+			"-resize", "1600x1600>",
+			tmp.Name(), file.Name(),
+		)
+	}
+	if err := command.Run(); err != nil {
 		return nil, err
 	}
 	return file, nil

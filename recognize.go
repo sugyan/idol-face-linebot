@@ -12,8 +12,17 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
-func (a *app) recognizeFaces(imageURL, replyToken string) error {
-	result, err := a.recognizerAdmin.RecognizeFaces(imageURL)
+func (a *app) recognizeFaces(key, replyToken string) error {
+	appURL := os.Getenv("APP_URL")
+	imageURL, err := url.Parse(appURL)
+	if err != nil {
+		return err
+	}
+	imageURL.Path = path.Join(imageURL.Path, "image")
+	values := url.Values{}
+	values.Set("key", key)
+	imageURL.RawQuery = values.Encode()
+	result, err := a.recognizerAdmin.RecognizeFaces(imageURL.String())
 	if err != nil {
 		return err
 	}
@@ -27,7 +36,6 @@ func (a *app) recognizeFaces(imageURL, replyToken string) error {
 		if len(top.Label.Description) > 0 {
 			name += " (" + strings.Split(top.Label.Description, "\r\n")[0] + ")"
 		}
-		text := fmt.Sprintf("%s [%.2f]", name, top.Value*100.0)
 		xMin := math.MaxInt32
 		xMax := math.MinInt32
 		yMin := math.MaxInt32
@@ -55,10 +63,11 @@ func (a *app) recognizeFaces(imageURL, replyToken string) error {
 			fmt.Sprintf("%.2f,%.2f", float64(xSize)*0.5, float64(ySize)*0.5),
 		}, " ")
 		values := url.Values{}
+		values.Set("key", key)
 		values.Set("srt", srt)
 		values.Set("w", strconv.Itoa(int(xSize+0.5)))
 		values.Set("h", strconv.Itoa(int(ySize+0.5)))
-		thumbnailImageURL, err := url.Parse(os.Getenv("APP_URL"))
+		thumbnailImageURL, _ := url.Parse(appURL)
 		thumbnailImageURL.Path = path.Join(thumbnailImageURL.Path, "image")
 		thumbnailImageURL.RawQuery = values.Encode()
 		if err != nil {
@@ -66,8 +75,8 @@ func (a *app) recognizeFaces(imageURL, replyToken string) error {
 		}
 		columns = append(columns, linebot.NewCarouselColumn(
 			thumbnailImageURL.String(),
-			"",
-			text,
+			name,
+			fmt.Sprintf("%.2f", top.Value*100.0),
 			linebot.NewURITemplateAction(
 				"@"+top.Label.Twitter,
 				"https://twitter.com/"+top.Label.Twitter,

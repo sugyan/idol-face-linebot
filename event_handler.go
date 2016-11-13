@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/url"
-	"os"
-	"path"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/face-manager-linebot/recognizer"
@@ -46,15 +43,7 @@ func (a *app) handleMessage(event *linebot.Event) error {
 		if err != nil {
 			return err
 		}
-		imageURL, err := url.Parse(os.Getenv("APP_URL"))
-		imageURL.Path = path.Join(imageURL.Path, "image")
-		if err != nil {
-			return err
-		}
-		values := url.Values{}
-		values.Set("key", key)
-		imageURL.RawQuery = values.Encode()
-		if err := a.recognizeFaces(imageURL.String(), event.ReplyToken); err != nil {
+		if err := a.recognizeFaces(key, event.ReplyToken); err != nil {
 			return fmt.Errorf("recognize image error: %v", err)
 		}
 	}
