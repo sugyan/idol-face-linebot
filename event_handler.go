@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
+	"os"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/face-manager-linebot/recognizer"
@@ -38,8 +40,19 @@ func (a *app) handleMessage(event *linebot.Event) error {
 		}
 	case *linebot.ImageMessage:
 		log.Printf("image message from %v: %s", event.Source, message.ID)
-		imageURL := "" // TODO
-		if err := a.recognizeFaces(imageURL, event.ReplyToken); err != nil {
+		// encrypt message ID and pass URL
+		key, err := a.encrypt(message.ID)
+		if err != nil {
+			return err
+		}
+		imageURL, err := url.Parse(os.Getenv("APP_URL") + "/image")
+		if err != nil {
+			return err
+		}
+		values := url.Values{}
+		values.Set("key", key)
+		imageURL.RawQuery = values.Encode()
+		if err := a.recognizeFaces(imageURL.String(), event.ReplyToken); err != nil {
 			return fmt.Errorf("recognize image error: %v", err)
 		}
 	}
@@ -74,14 +87,14 @@ func (a *app) handlePostback(event *linebot.Event) error {
 			log.Printf("accept error: %v", err)
 			message = "処理できませんでした\xf0\x9f\x98\x9e"
 		} else {
-			message = fmt.Sprintf("id:%dを更新しました\xf0\x9f\x99\x86", data.FaceID)
+			message = fmt.Sprintf("ID:%d を更新しました \xf0\x9f\x99\x86", data.FaceID)
 		}
 	case postbackActionReject:
 		if err := client.RejectInference(data.InferenceID); err != nil {
 			log.Printf("reject error: %v", err)
 			message = "処理できませんでした\xf0\x9f\x98\x9e"
 		} else {
-			message = fmt.Sprintf("id:%dを更新しました\xf0\x9f\x99\x85", data.FaceID)
+			message = fmt.Sprintf("ID:%d を更新しました \xf0\x9f\x99\x85", data.FaceID)
 		}
 	}
 	if _, err := a.linebot.ReplyMessage(

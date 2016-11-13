@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/base64"
 	"io"
 )
 
@@ -17,11 +17,11 @@ func (a *app) encrypt(src string) (string, error) {
 	}
 	stream := cipher.NewCFBEncrypter(a.cipherBlock, iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], plain)
-	return hex.EncodeToString(ciphertext), nil
+	return base64.RawStdEncoding.EncodeToString(ciphertext), nil
 }
 
 func (a *app) decrypt(src string) (string, error) {
-	ciphertext, err := hex.DecodeString(src)
+	ciphertext, err := base64.RawStdEncoding.DecodeString(src)
 	if err != nil {
 		return "", err
 	}

@@ -19,7 +19,7 @@ func main() {
 	}
 	http.HandleFunc(os.Getenv("CALLBACK_PATH"), app.handler)
 	http.HandleFunc("/thumbnail", thumbnailImageHandler)
-	http.HandleFunc("/crop", cropImageHandler)
+	http.HandleFunc("/image", app.imageHandler)
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
 		log.Fatal(err)
 	}

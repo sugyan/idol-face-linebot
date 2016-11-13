@@ -13,7 +13,38 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/line/line-bot-sdk-go/linebot"
 )
+
+func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
+	res, err := a.handleGetContentRequest(r)
+	if err != nil {
+		log.Print(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", res.ContentType)
+	w.Header().Set("Content-Length", strconv.FormatInt(res.ContentLength, 10))
+	if _, err := io.Copy(w, res.Content); err != nil {
+		log.Print(err.Error())
+	}
+}
+
+func (a *app) handleGetContentRequest(r *http.Request) (*linebot.MessageContentResponse, error) {
+	query := r.URL.Query()
+	key := query.Get("key")
+	messageID, err := a.decrypt(key)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("get content: %s", messageID)
+	res, err := a.linebot.GetMessageContent(messageID).Do()
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
 
 func thumbnailImageHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
