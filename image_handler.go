@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 )
 
@@ -44,57 +45,64 @@ func (a *app) getImageFile(r *http.Request) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("get content: %s", messageID)
-	res, err := a.linebot.GetMessageContent(messageID).Do()
+	imagePath := filepath.Join(a.imageDir, messageID)
+	info, err := os.Stat(imagePath)
 	if err != nil {
-		return nil, err
-	}
-	// download to tempfile
-	tmp, err := ioutil.TempFile("", "")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(tmp.Name())
+		// download to tempfile
+		log.Printf("get content: %s", messageID)
+		res, err := a.linebot.GetMessageContent(messageID).Do()
+		if err != nil {
+			return nil, err
+		}
+		defer res.Content.Close()
+		file, err := ioutil.TempFile("", "")
+		if err != nil {
+			return nil, err
+		}
+		defer os.Remove(file.Name())
 
-	written, err := io.Copy(tmp, res.Content)
-	if err != nil {
-		return nil, err
-	}
-	if written != res.ContentLength {
-		return nil, fmt.Errorf("content lengths mismatch. (%d:%d)", written, res.ContentLength)
-	}
-	// convert to jpeg file
-	file, err := ioutil.TempFile("", "")
-	if err != nil {
-		return nil, err
+		written, err := io.Copy(file, res.Content)
+		if err != nil {
+			return nil, err
+		}
+		if written != res.ContentLength {
+			return nil, fmt.Errorf("content lengths mismatch. (%d:%d)", written, res.ContentLength)
+		}
+		// convert to jpeg file
+		if err := exec.Command(
+			"convert",
+			"-resize", "1600x1600>",
+			file.Name(), imagePath,
+		).Run(); err != nil {
+			return nil, err
+		}
+	} else {
+		log.Printf("already exist: %d", info.Size())
 	}
 	srt := query.Get("srt")
 	w := query.Get("w")
 	h := query.Get("h")
-	var command *exec.Cmd
 	if len(srt) > 0 && len(w) > 0 && len(h) > 0 {
+		file, err := ioutil.TempFile("", "")
+		if err != nil {
+			return nil, err
+		}
 		xSize, _ := strconv.Atoi(w)
 		ySize, _ := strconv.Atoi(h)
-		command = exec.Command(
+		if err := exec.Command(
 			"convert",
 			"-background", "black",
 			"-virtual-pixel", "background",
 			"-distort", "SRT", srt,
 			"-crop", fmt.Sprintf("%dx%d+0+0", xSize, ySize),
 			"-extent", fmt.Sprintf("%dx%d-%d+0", int(float64(xSize)*1.51+0.5), ySize, int(float64(xSize)*0.51*0.5+0.5)),
-			tmp.Name(), file.Name(),
-		)
-	} else {
-		command = exec.Command(
-			"convert",
-			"-resize", "1600x1600>",
-			tmp.Name(), file.Name(),
-		)
+			imagePath, file.Name(),
+		).Run(); err != nil {
+			return nil, err
+		}
+		return file, nil
 	}
-	if err := command.Run(); err != nil {
-		return nil, err
-	}
-	return file, nil
+	return os.OpenFile(imagePath, os.O_RDONLY, 0600)
 }
 
 func thumbnailImageHandler(w http.ResponseWriter, r *http.Request) {

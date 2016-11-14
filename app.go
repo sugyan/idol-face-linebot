@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
+	"io/ioutil"
 	"net/url"
 	"os"
 
@@ -17,6 +18,7 @@ type app struct {
 	redis           *redis.Client
 	recognizerAdmin *recognizer.Client
 	cipherBlock     cipher.Block
+	imageDir        string
 }
 
 func newApp() (*app, error) {
@@ -55,10 +57,16 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
+	// imageDir
+	dirName, err := ioutil.TempDir("", "image")
+	if err != nil {
+		return nil, err
+	}
 	return &app{
 		linebot:         linebotClient,
 		redis:           redisClient,
 		recognizerAdmin: recognizerAdminClient,
 		cipherBlock:     block,
+		imageDir:        dirName,
 	}, nil
 }
