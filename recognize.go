@@ -26,16 +26,23 @@ func (a *app) recognizeFaces(key, replyToken string) error {
 	if err != nil {
 		return err
 	}
+	// make carousel columns
 	columns := make([]*linebot.CarouselColumn, 0, 5)
+	success := 0
 	for _, face := range result.Faces {
 		top := face.Recognize[0]
 		if !(top.Label.ID > 0 && top.Value > 0.5) {
+			continue
+		}
+		success++
+		if len(columns) >= 5 {
 			continue
 		}
 		name := top.Label.Name
 		if len(top.Label.Description) > 0 {
 			name += " (" + strings.Split(top.Label.Description, "\r\n")[0] + ")"
 		}
+		// thumbnailImageURL parameters
 		xMin := math.MaxInt32
 		xMax := math.MinInt32
 		yMin := math.MaxInt32
@@ -70,9 +77,6 @@ func (a *app) recognizeFaces(key, replyToken string) error {
 		thumbnailImageURL, _ := url.Parse(appURL)
 		thumbnailImageURL.Path = path.Join(thumbnailImageURL.Path, "image")
 		thumbnailImageURL.RawQuery = values.Encode()
-		if err != nil {
-			return err
-		}
 		columns = append(columns, linebot.NewCarouselColumn(
 			thumbnailImageURL.String(),
 			name,
@@ -83,13 +87,37 @@ func (a *app) recognizeFaces(key, replyToken string) error {
 			),
 		))
 	}
-	_, err = a.linebot.ReplyMessage(
-		replyToken,
-		linebot.NewTemplateMessage(
-			"altText",
-			linebot.NewCarouselTemplate(columns...),
-		),
-	).Do()
+	var messages []linebot.Message
+	if success > 0 {
+		// success
+		text := fmt.Sprintf("%d件の顔を識別しました\xf0\x9f\x98\x80", success)
+		if len(result.Faces) > len(columns) {
+			text = fmt.Sprintf("%d件中 %s", len(result.Faces), text)
+		}
+		altTextLines := []string{}
+		for _, column := range columns {
+			altTextLines = append(altTextLines, fmt.Sprintf("%s [%s]", column.Title, column.Text))
+		}
+		messages = []linebot.Message{
+			linebot.NewTextMessage(text),
+			linebot.NewTemplateMessage(
+				strings.Join(altTextLines, "\n"),
+				linebot.NewCarouselTemplate(columns...),
+			),
+		}
+	} else {
+		// failure
+		var text string
+		if len(result.Faces) > 0 {
+			text = fmt.Sprintf("%d件の顔を検出しましたが、識別対象の人物ではなさそうです", len(result.Faces))
+		} else {
+			text = "顔を検出できませんでした"
+		}
+		messages = []linebot.Message{
+			linebot.NewTextMessage(text + "\xf0\x9f\x98\x9e"),
+		}
+	}
+	_, err = a.linebot.ReplyMessage(replyToken, messages...).Do()
 	if err != nil {
 		return err
 	}
