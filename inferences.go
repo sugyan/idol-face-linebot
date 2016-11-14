@@ -101,20 +101,28 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 			),
 		)
 	}
-	titles := []string{}
-	for _, column := range columns {
-		titles = append(titles, column.Title)
+	var messages []linebot.Message
+	if len(columns) > 0 {
+		altTextLines := []string{}
+		for _, column := range columns {
+			altTextLines = append(altTextLines, column.Title)
+		}
+		messages = []linebot.Message{
+			linebot.NewTextMessage(
+				fmt.Sprintf("%d件の候補があります\xf0\x9f\x98\x80", totalCount),
+			),
+			linebot.NewTemplateMessage(
+				strings.Join(altTextLines, "\n"),
+				linebot.NewCarouselTemplate(columns...),
+			),
+		}
+	} else {
+		messages = []linebot.Message{
+			linebot.NewTextMessage("候補が見つかりませんでした\xf0\x9f\x98\x9e"),
+		}
 	}
-	if _, err = a.linebot.ReplyMessage(
-		replyToken,
-		linebot.NewTextMessage(
-			fmt.Sprintf("%d件の候補があります\xf0\x9f\x98\x80", totalCount),
-		),
-		linebot.NewTemplateMessage(
-			strings.Join(titles, "\n"),
-			linebot.NewCarouselTemplate(columns...),
-		),
-	).Do(); err != nil {
+	_, err = a.linebot.ReplyMessage(replyToken, messages...).Do()
+	if err != nil {
 		return err
 	}
 	return nil
