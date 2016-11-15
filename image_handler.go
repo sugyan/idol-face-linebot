@@ -9,36 +9,40 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"time"
+
+	"gopkg.in/redis.v5"
 )
 
 func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
-	file, err := a.getImageFile(r)
-	if err != nil {
-		log.Print(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer os.Remove(file.Name())
-	bytes, err := ioutil.ReadAll(file)
-	if err != nil {
+	var bytes []byte
+	bytes, err := a.redis.Get(cacheKey(r.URL)).Bytes()
+	if err == redis.Nil {
+		bytes, err = a.getImageData(r)
+		if err != nil {
+			log.Printf("get image error: %s", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	} else if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Content-Length", strconv.Itoa(len(bytes)))
-	written, err := w.Write(bytes)
+	_, err = w.Write(bytes)
 	if err != nil {
 		log.Print(err.Error())
 	}
-	log.Printf("sent %d bytes.", written)
 }
 
-func (a *app) getImageFile(r *http.Request) (*os.File, error) {
+func (a *app) getImageData(r *http.Request) ([]byte, error) {
 	query := r.URL.Query()
 	key := query.Get("key")
 	messageID, err := a.decrypt(key)
@@ -46,38 +50,10 @@ func (a *app) getImageFile(r *http.Request) (*os.File, error) {
 		return nil, err
 	}
 	imagePath := filepath.Join(a.imageDir, messageID)
-	info, err := os.Stat(imagePath)
-	if err != nil {
-		// download to tempfile
-		log.Printf("get content: %s", messageID)
-		res, err := a.linebot.GetMessageContent(messageID).Do()
-		if err != nil {
+	if _, err := os.Stat(imagePath); err != nil {
+		if err := a.downloadContentAsJpeg(messageID, imagePath); err != nil {
 			return nil, err
 		}
-		defer res.Content.Close()
-		file, err := ioutil.TempFile("", "")
-		if err != nil {
-			return nil, err
-		}
-		defer os.Remove(file.Name())
-
-		written, err := io.Copy(file, res.Content)
-		if err != nil {
-			return nil, err
-		}
-		if written != res.ContentLength {
-			return nil, fmt.Errorf("content lengths mismatch. (%d:%d)", written, res.ContentLength)
-		}
-		// convert to jpeg file
-		if err := exec.Command(
-			"convert",
-			"-resize", "1600x1600>",
-			file.Name(), imagePath,
-		).Run(); err != nil {
-			return nil, err
-		}
-	} else {
-		log.Printf("already exist: %d", info.Size())
 	}
 	srt := query.Get("srt")
 	w := query.Get("w")
@@ -87,22 +63,66 @@ func (a *app) getImageFile(r *http.Request) (*os.File, error) {
 		if err != nil {
 			return nil, err
 		}
+		defer os.Remove(file.Name())
 		xSize, _ := strconv.Atoi(w)
 		ySize, _ := strconv.Atoi(h)
-		if err := exec.Command(
+		cmd := exec.Command(
 			"convert",
 			"-background", "black",
 			"-virtual-pixel", "background",
 			"-distort", "SRT", srt,
 			"-crop", fmt.Sprintf("%dx%d+0+0", xSize, ySize),
 			"-extent", fmt.Sprintf("%dx%d-%d+0", int(float64(xSize)*1.51+0.5), ySize, int(float64(xSize)*0.51*0.5+0.5)),
+			"-resize", "302x200>",
 			imagePath, file.Name(),
-		).Run(); err != nil {
+		)
+		log.Print(cmd.Args)
+		if err := cmd.Run(); err != nil {
 			return nil, err
 		}
-		return file, nil
+		bytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			return nil, err
+		}
+		// cache data 10 minutes
+		if err := a.redis.Set(cacheKey(r.URL), bytes, time.Minute*10).Err(); err != nil {
+			return nil, err
+		}
+		return bytes, nil
 	}
-	return os.OpenFile(imagePath, os.O_RDONLY, 0600)
+	return ioutil.ReadFile(imagePath)
+}
+
+// download to tempfile, and convert (and resize if large) to jpeg
+func (a *app) downloadContentAsJpeg(messageID, imagePath string) error {
+	log.Printf("get content: %s", messageID)
+
+	res, err := a.linebot.GetMessageContent(messageID).Do()
+	if err != nil {
+		return err
+	}
+	defer res.Content.Close()
+	file, err := ioutil.TempFile("", "")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(file.Name())
+
+	written, err := io.Copy(file, res.Content)
+	if err != nil {
+		return err
+	}
+	if written != res.ContentLength {
+		return fmt.Errorf("content lengths mismatch. (%d:%d)", written, res.ContentLength)
+	}
+	if err := exec.Command(
+		"convert",
+		"-resize", "1600x1600>",
+		file.Name(), imagePath,
+	).Run(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func thumbnailImageHandler(w http.ResponseWriter, r *http.Request) {
@@ -127,4 +147,8 @@ func thumbnailImageHandler(w http.ResponseWriter, r *http.Request) {
 	draw.Draw(img, image.Rect(0, 0, 112, 112).Add(image.Pt(28, 0)), face, image.Pt(0, 0), draw.Src)
 
 	jpeg.Encode(w, img, &jpeg.Options{Quality: 95})
+}
+
+func cacheKey(u *url.URL) string {
+	return "image:" + u.RawQuery
 }
