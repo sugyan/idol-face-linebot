@@ -45,62 +45,8 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 	if err != nil {
 		return err
 	}
-	inferences := result.Inferences
 	totalCount := result.Page.TotalCount
-	ids := rand.Perm(len(inferences))
-	num := 5
-	if len(ids) < num {
-		num = len(ids)
-	}
-	columns := make([]*linebot.CarouselColumn, 0, 5)
-	for i := 0; i < num; i++ {
-		inference := inferences[ids[i]]
-		title := fmt.Sprintf("%d:[%.2f] %s", inference.Face.ID, inference.Score*100.0, inference.Label.Name)
-		if inference.Label.Description != "" {
-			title += " (" + strings.Replace(inference.Label.Description, "\r\n", ", ", -1) + ")"
-		}
-		if len([]rune(title)) > 40 {
-			title = string([]rune(title)[0:39]) + "…"
-		}
-		text := strings.Replace(inference.Face.Photo.Caption, "\n", " ", -1)
-		if len([]rune(text)) > 60 {
-			text = string([]rune(text)[0:59]) + "…"
-		}
-		thumbnailImageURL, err := url.Parse(os.Getenv("APP_URL") + "/thumbnail")
-		if err != nil {
-			return err
-		}
-		values := url.Values{}
-		values.Set("image_url", inference.Face.ImageURL)
-		thumbnailImageURL.RawQuery = values.Encode()
-		accept, _ := json.Marshal(postbackData{
-			Action:      postbackActionAccept,
-			FaceID:      inference.Face.ID,
-			InferenceID: inference.ID,
-		})
-		reject, _ := json.Marshal(postbackData{
-			Action:      postbackActionReject,
-			FaceID:      inference.Face.ID,
-			InferenceID: inference.ID,
-		})
-		if err != nil {
-			return err
-		}
-		columns = append(
-			columns,
-			linebot.NewCarouselColumn(
-				thumbnailImageURL.String(),
-				title,
-				text,
-				linebot.NewURITemplateAction(
-					"\xf0\x9f\x94\x8d くわしく",
-					inference.Face.Photo.SourceURL,
-				),
-				linebot.NewPostbackTemplateAction("\xe2\xad\x95 あってる", string(accept), ""),
-				linebot.NewPostbackTemplateAction("\xe2\x9d\x8c ちがうよ", string(reject), ""),
-			),
-		)
-	}
+	columns := makeInferencesCarousel(result.Inferences)
 	var messages []linebot.Message
 	if len(columns) > 0 {
 		altTextLines := []string{}
@@ -126,4 +72,56 @@ func (a *app) sendInferences(userID, replyToken, query string) error {
 		return err
 	}
 	return nil
+}
+
+func makeInferencesCarousel(inferences []recognizer.Inference) []*linebot.CarouselColumn {
+	columns := make([]*linebot.CarouselColumn, 0, 5)
+	ids := rand.Perm(len(inferences))
+	num := 5
+	if len(ids) < num {
+		num = len(ids)
+	}
+	for i := 0; i < num; i++ {
+		inference := inferences[ids[i]]
+		title := fmt.Sprintf("%d:[%.2f] %s", inference.Face.ID, inference.Score*100.0, inference.Label.Name)
+		if inference.Label.Description != "" {
+			title += " (" + strings.Replace(inference.Label.Description, "\r\n", ", ", -1) + ")"
+		}
+		if len([]rune(title)) > 40 {
+			title = string([]rune(title)[0:39]) + "…"
+		}
+		text := strings.Replace(inference.Face.Photo.Caption, "\n", " ", -1)
+		if len([]rune(text)) > 60 {
+			text = string([]rune(text)[0:59]) + "…"
+		}
+		thumbnailImageURL, _ := url.Parse(os.Getenv("APP_URL") + "/thumbnail")
+		values := url.Values{}
+		values.Set("image_url", inference.Face.ImageURL)
+		thumbnailImageURL.RawQuery = values.Encode()
+		accept, _ := json.Marshal(postbackData{
+			Action:      postbackActionAccept,
+			FaceID:      inference.Face.ID,
+			InferenceID: inference.ID,
+		})
+		reject, _ := json.Marshal(postbackData{
+			Action:      postbackActionReject,
+			FaceID:      inference.Face.ID,
+			InferenceID: inference.ID,
+		})
+		columns = append(
+			columns,
+			linebot.NewCarouselColumn(
+				thumbnailImageURL.String(),
+				title,
+				text,
+				linebot.NewURITemplateAction(
+					"\xf0\x9f\x94\x8d くわしく",
+					inference.Face.Photo.SourceURL,
+				),
+				linebot.NewPostbackTemplateAction("\xe2\xad\x95 あってる", string(accept), ""),
+				linebot.NewPostbackTemplateAction("\xe2\x9d\x8c ちがうよ", string(reject), ""),
+			),
+		)
+	}
+	return columns
 }

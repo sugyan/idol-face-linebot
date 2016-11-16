@@ -6,13 +6,14 @@ import (
 
 // InferencesResult type
 type InferencesResult struct {
-	Inferences []inference `json:"inferences"`
+	Inferences []Inference `json:"inferences"`
 	Page       struct {
 		TotalCount int `json:"total_count"`
 	} `json:"page"`
 }
 
-type inference struct {
+// Inference type
+type Inference struct {
 	ID    int     `json:"id"`
 	Score float32 `json:"score"`
 	Face  *face   `json:"face"`
