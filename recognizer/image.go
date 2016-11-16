@@ -32,28 +32,49 @@ func (c *Client) RecognizeFaces(photoURL string) (*RecognizedResults, error) {
 
 // RecognizedResults type
 type RecognizedResults struct {
-	Faces []struct {
-		Bounding []struct {
-			X int `json:"x"`
-			Y int `json:"y"`
-		} `json:"bounding"`
-		Angle struct {
-			Roll  float64 `json:"roll"`
-			Yaw   float64 `json:"yaw"`
-			Pitch float64 `json:"pitch"`
-		} `json:"angle"`
-		Recognize []struct {
-			Label struct {
-				Description string `json:"description"`
-				FacesCount  int    `json:"faces_count"`
-				ID          int    `json:"id"`
-				IndexNumber int    `json:"index_number"`
-				LabelURL    string `json:"label_url"`
-				Name        string `json:"name"`
-				Twitter     string `json:"twitter"`
-			} `json:"label"`
-			Value float64 `json:"value"`
-		} `json:"recognize"`
-	} `json:"faces"`
-	Message string `json:"message"`
+	Faces   []RecognizedFace `json:"faces"`
+	Message string           `json:"message"`
+}
+
+// RecognizedFace type
+type RecognizedFace struct {
+	Bounding []struct {
+		X int `json:"x"`
+		Y int `json:"y"`
+	} `json:"bounding"`
+	Angle struct {
+		Roll  float64 `json:"roll"`
+		Yaw   float64 `json:"yaw"`
+		Pitch float64 `json:"pitch"`
+	} `json:"angle"`
+	Recognize []struct {
+		Label struct {
+			Description string `json:"description"`
+			FacesCount  int    `json:"faces_count"`
+			ID          int    `json:"id"`
+			IndexNumber int    `json:"index_number"`
+			LabelURL    string `json:"label_url"`
+			Name        string `json:"name"`
+			Twitter     string `json:"twitter"`
+		} `json:"label"`
+		Value float64 `json:"value"`
+	} `json:"recognize"`
+}
+
+// ByTopValue implements sort.Interface for []RecognizedFace by top result's value in descending order
+type ByTopValue []RecognizedFace
+
+// Len method of ByTopValue
+func (faces ByTopValue) Len() int {
+	return len(faces)
+}
+
+// Swap method of ByTopValue
+func (faces ByTopValue) Swap(i, j int) {
+	faces[i], faces[j] = faces[j], faces[i]
+}
+
+// Less method of ByTopValue compares value of top result
+func (faces ByTopValue) Less(i, j int) bool {
+	return faces[j].Recognize[0].Value < faces[i].Recognize[0].Value
 }
