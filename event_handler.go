@@ -25,10 +25,11 @@ type postbackData struct {
 func (a *app) handleMessage(event *linebot.Event) error {
 	switch message := event.Message.(type) {
 	case *linebot.TextMessage:
-		log.Printf("text message from %v: %v", event.Source, message.Text)
 		if event.Source.Type != linebot.EventSourceTypeUser {
-			return fmt.Errorf("not from user: %v", event)
+			// not from user (ignore)
+			return nil
 		}
+		log.Printf("text message from %s: %s", event.Source.UserID, message.Text)
 		query := message.Text
 		if message.Text == "all" {
 			query = ""
