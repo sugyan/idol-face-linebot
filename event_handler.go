@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/sugyan/face-manager-linebot/recognizer"
+	"github.com/sugyan/idol-face-linebot/recognizer"
 )
 
 type postbackAction string
