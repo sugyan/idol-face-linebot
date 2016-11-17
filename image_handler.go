@@ -20,6 +20,12 @@ import (
 )
 
 func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
+	// return 304 if "If-Modified-Since" header exists.
+	if len(r.Header.Get("If-Modified-Since")) > 0 {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	var bytes []byte
 	bytes, err := a.redis.Get(cacheKey(r.URL)).Bytes()
 	if err == redis.Nil {
@@ -36,6 +42,7 @@ func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Content-Length", strconv.Itoa(len(bytes)))
+	w.Header().Set("Last-Modified", time.Now().Format(http.TimeFormat))
 	_, err = w.Write(bytes)
 	if err != nil {
 		log.Print(err.Error())
