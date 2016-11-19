@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ import (
 	"gopkg.in/redis.v5"
 )
 
-func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
+func (app *BotApp) imageHandler(w http.ResponseWriter, r *http.Request) {
 	// return 304 if "If-Modified-Since" header exists.
 	if len(r.Header.Get("If-Modified-Since")) > 0 {
 		w.WriteHeader(http.StatusNotModified)
@@ -27,9 +27,9 @@ func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var bytes []byte
-	bytes, err := a.redis.Get(cacheKey(r.URL)).Bytes()
+	bytes, err := app.redis.Get(cacheKey(r.URL)).Bytes()
 	if err == redis.Nil {
-		bytes, err = a.getImageData(r)
+		bytes, err = app.getImageData(r)
 		if err != nil {
 			log.Printf("get image error: %s", err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -49,16 +49,16 @@ func (a *app) imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *app) getImageData(r *http.Request) ([]byte, error) {
+func (app *BotApp) getImageData(r *http.Request) ([]byte, error) {
 	query := r.URL.Query()
 	key := query.Get("key")
-	messageID, err := a.decrypt(key)
+	messageID, err := app.decrypt(key)
 	if err != nil {
 		return nil, err
 	}
-	imagePath := filepath.Join(a.imageDir, messageID)
+	imagePath := filepath.Join(app.imageDir, messageID)
 	if _, err := os.Stat(imagePath); err != nil {
-		if err := a.downloadContentAsJpeg(messageID, imagePath); err != nil {
+		if err := app.downloadContentAsJpeg(messageID, imagePath); err != nil {
 			return nil, err
 		}
 	}
@@ -92,7 +92,7 @@ func (a *app) getImageData(r *http.Request) ([]byte, error) {
 			return nil, err
 		}
 		// cache data 10 minutes
-		if err := a.redis.Set(cacheKey(r.URL), bytes, time.Minute*10).Err(); err != nil {
+		if err := app.redis.Set(cacheKey(r.URL), bytes, time.Minute*10).Err(); err != nil {
 			return nil, err
 		}
 		return bytes, nil
@@ -101,10 +101,10 @@ func (a *app) getImageData(r *http.Request) ([]byte, error) {
 }
 
 // download to tempfile, and convert (and resize if large) to jpeg
-func (a *app) downloadContentAsJpeg(messageID, imagePath string) error {
+func (app *BotApp) downloadContentAsJpeg(messageID, imagePath string) error {
 	log.Printf("get content: %s", messageID)
 
-	res, err := a.linebot.GetMessageContent(messageID).Do()
+	res, err := app.linebot.GetMessageContent(messageID).Do()
 	if err != nil {
 		return err
 	}

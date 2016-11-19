@@ -1,10 +1,11 @@
-package main
+package app
 
 import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 
@@ -13,7 +14,8 @@ import (
 	"gopkg.in/redis.v5"
 )
 
-type app struct {
+// BotApp type
+type BotApp struct {
 	linebot         *linebot.Client
 	redis           *redis.Client
 	recognizerAdmin *recognizer.Client
@@ -21,7 +23,19 @@ type app struct {
 	imageDir        string
 }
 
-func newApp() (*app, error) {
+// Run method
+func (app *BotApp) Run(callbackPath string) error {
+	http.HandleFunc(callbackPath, app.callbackHandler)
+	http.HandleFunc("/thumbnail", thumbnailImageHandler)
+	http.HandleFunc("/image", app.imageHandler)
+	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+// NewBotApp function returns app inctance
+func NewBotApp() (*BotApp, error) {
 	// linebot client
 	linebotClient, err := linebot.New(
 		os.Getenv("CHANNEL_SECRET"),
@@ -62,7 +76,7 @@ func newApp() (*app, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &app{
+	return &BotApp{
 		linebot:         linebotClient,
 		redis:           redisClient,
 		recognizerAdmin: recognizerAdminClient,
