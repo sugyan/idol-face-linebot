@@ -1,7 +1,10 @@
 package app
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"path"
 	"sort"
@@ -11,16 +14,26 @@ import (
 	"github.com/sugyan/idol-face-linebot/recognizer"
 )
 
-func (app *BotApp) sendRecognized(key, replyToken string) error {
-	imageURL, err := url.Parse(app.baseURL)
+func (app *BotApp) sendRecognized(messageID, replyToken string) error {
+	// POST image data to recognition API
+	res, err := app.linebot.GetMessageContent(messageID).Do()
 	if err != nil {
 		return err
 	}
-	imageURL.Path = path.Join(imageURL.Path, "image")
-	values := url.Values{}
-	values.Set("key", key)
-	imageURL.RawQuery = values.Encode()
-	result, err := app.recognizerAdmin.RecognizeFaces(imageURL.String())
+	defer res.Content.Close()
+	bytes, err := ioutil.ReadAll(res.Content)
+	if err != nil {
+		return err
+	}
+	payload, err := json.Marshal(struct {
+		Image string `json:"image"`
+	}{
+		Image: "data:" + res.ContentType + ";base64," + base64.StdEncoding.EncodeToString(bytes),
+	})
+	if err != nil {
+		return err
+	}
+	result, err := app.recognizerAdmin.RecognizeFaces(payload)
 	if err != nil {
 		return err
 	}
@@ -40,6 +53,11 @@ func (app *BotApp) sendRecognized(key, replyToken string) error {
 		succeededFaces = append(succeededFaces, face)
 	}
 
+	// encrypt message ID and pass URL
+	key, err := app.encrypt(messageID)
+	if err != nil {
+		return err
+	}
 	var messages []linebot.Message
 	if success > 0 {
 		// success

@@ -1,21 +1,18 @@
 package recognizer
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/url"
 	"path"
 )
 
 // RecognizeFaces function
-func (c *Client) RecognizeFaces(photoURL string) (*RecognizedResults, error) {
-	values := url.Values{}
-	values.Set("image_url", photoURL)
+func (c *Client) RecognizeFaces(data []byte) (*RecognizedResults, error) {
 	u := *c.EndPointBase
-	u.Path = path.Join(c.EndPointBase.Path, "recognizer", "faces")
-	u.RawQuery = values.Encode()
-	res, err := c.do("GET", u.String(), nil)
+	u.Path = path.Join(c.EndPointBase.Path, "recognizer", "image.json")
+	res, err := c.do("POST", u.String(), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}

@@ -60,12 +60,7 @@ func (app *BotApp) handleMessage(event *linebot.Event) error {
 		}
 	case *linebot.ImageMessage:
 		log.Printf("image message from %v: %s", event.Source, message.ID)
-		// encrypt message ID and pass URL
-		key, err := app.encrypt(message.ID)
-		if err != nil {
-			return err
-		}
-		if err := app.sendRecognized(key, event.ReplyToken); err != nil {
+		if err := app.sendRecognized(message.ID, event.ReplyToken); err != nil {
 			return fmt.Errorf("recognize image error: %v", err)
 		}
 	}

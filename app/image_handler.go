@@ -124,7 +124,6 @@ func (app *BotApp) downloadContentAsJpeg(messageID, imagePath string) error {
 	}
 	if err := exec.Command(
 		"convert",
-		"-resize", "1600x1600>",
 		file.Name(), imagePath,
 	).Run(); err != nil {
 		return err
