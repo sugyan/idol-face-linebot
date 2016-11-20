@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/sugyan/idol-face-linebot/app/message"
 	"github.com/sugyan/idol-face-linebot/recognizer"
 )
 
@@ -49,7 +48,7 @@ func (app *BotApp) sendRecognized(key, replyToken string) error {
 			return err
 		}
 		thumbnailImageURL.Path = path.Join(thumbnailImageURL.Path, "image")
-		columns := message.FromRecognizedFaces(succeededFaces, key, thumbnailImageURL.String())
+		columns := columnsFromRecognizedFaces(succeededFaces, key, thumbnailImageURL.String())
 
 		text := fmt.Sprintf("%d件の顔を識別しました\xf0\x9f\x98\x80", success)
 		if len(result.Faces) > len(columns) {

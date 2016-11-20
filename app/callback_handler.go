@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/sugyan/idol-face-linebot/app/message"
 	"github.com/sugyan/idol-face-linebot/recognizer"
 )
 
@@ -45,24 +44,24 @@ func (app *BotApp) callbackHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *BotApp) handleMessage(event *linebot.Event) error {
-	switch msg := event.Message.(type) {
+	switch message := event.Message.(type) {
 	case *linebot.TextMessage:
 		if event.Source.Type != linebot.EventSourceTypeUser {
 			// not from user (ignore)
 			return nil
 		}
-		log.Printf("text message from %s: %s", event.Source.UserID, msg.Text)
-		query := msg.Text
-		if msg.Text == "all" {
+		log.Printf("text message from %s: %s", event.Source.UserID, message.Text)
+		query := message.Text
+		if message.Text == "all" {
 			query = ""
 		}
 		if err := app.sendInferences(event.Source.UserID, event.ReplyToken, query); err != nil {
 			return fmt.Errorf("send error: %v", err)
 		}
 	case *linebot.ImageMessage:
-		log.Printf("image message from %v: %s", event.Source, msg.ID)
+		log.Printf("image message from %v: %s", event.Source, message.ID)
 		// encrypt message ID and pass URL
-		key, err := app.encrypt(msg.ID)
+		key, err := app.encrypt(message.ID)
 		if err != nil {
 			return err
 		}
@@ -89,21 +88,21 @@ func (app *BotApp) handlePostback(event *linebot.Event) error {
 		return err
 	}
 	// unmarshal data
-	data := &message.PostbackData{}
+	data := &postbackData{}
 	if err := json.Unmarshal([]byte(event.Postback.Data), data); err != nil {
 		return err
 	}
 	// accept or reject
 	var text string
 	switch data.Action {
-	case message.PostbackActionAccept:
+	case postbackActionAccept:
 		if err := client.AcceptInference(data.InferenceID); err != nil {
 			log.Printf("accept error: %v", err)
 			text = "処理できませんでした\xf0\x9f\x98\x9e"
 		} else {
 			text = fmt.Sprintf("ID:%d を更新しました \xf0\x9f\x99\x86", data.FaceID)
 		}
-	case message.PostbackActionReject:
+	case postbackActionReject:
 		if err := client.RejectInference(data.InferenceID); err != nil {
 			log.Printf("reject error: %v", err)
 			text = "処理できませんでした\xf0\x9f\x98\x9e"

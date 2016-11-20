@@ -1,4 +1,4 @@
-package message
+package app
 
 import (
 	"encoding/json"
@@ -14,8 +14,7 @@ import (
 	"github.com/sugyan/idol-face-linebot/recognizer"
 )
 
-// FromInferences function
-func FromInferences(inferences []recognizer.Inference) []*linebot.CarouselColumn {
+func columnsFromInferences(inferences []recognizer.Inference) []*linebot.CarouselColumn {
 	columns := make([]*linebot.CarouselColumn, 0, 5)
 	ids := rand.Perm(len(inferences))
 	num := 5
@@ -39,13 +38,13 @@ func FromInferences(inferences []recognizer.Inference) []*linebot.CarouselColumn
 		values := url.Values{}
 		values.Set("image_url", inference.Face.ImageURL)
 		thumbnailImageURL.RawQuery = values.Encode()
-		accept, _ := json.Marshal(PostbackData{
-			Action:      PostbackActionAccept,
+		accept, _ := json.Marshal(postbackData{
+			Action:      postbackActionAccept,
 			FaceID:      inference.Face.ID,
 			InferenceID: inference.ID,
 		})
-		reject, _ := json.Marshal(PostbackData{
-			Action:      PostbackActionReject,
+		reject, _ := json.Marshal(postbackData{
+			Action:      postbackActionReject,
 			FaceID:      inference.Face.ID,
 			InferenceID: inference.ID,
 		})
@@ -67,8 +66,7 @@ func FromInferences(inferences []recognizer.Inference) []*linebot.CarouselColumn
 	return columns
 }
 
-// FromRecognizedFaces function
-func FromRecognizedFaces(faces []recognizer.RecognizedFace, key, thumbnailImageURL string) []*linebot.CarouselColumn {
+func columnsFromRecognizedFaces(faces []recognizer.RecognizedFace, key, thumbnailImageURL string) []*linebot.CarouselColumn {
 	columns := make([]*linebot.CarouselColumn, 0, 5)
 	for _, face := range faces {
 		top := face.Recognize[0]

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/sugyan/idol-face-linebot/app/message"
 	"github.com/sugyan/idol-face-linebot/recognizer"
 )
 
@@ -43,7 +42,7 @@ func (app *BotApp) sendInferences(userID, replyToken, query string) error {
 		return err
 	}
 	totalCount := result.Page.TotalCount
-	columns := message.FromInferences(result.Inferences)
+	columns := columnsFromInferences(result.Inferences)
 	var messages []linebot.Message
 	if len(columns) > 0 {
 		altTextLines := []string{}
