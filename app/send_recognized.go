@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"path"
 	"sort"
 	"strings"
@@ -14,8 +13,7 @@ import (
 )
 
 func (app *BotApp) sendRecognized(key, replyToken string) error {
-	appURL := os.Getenv("APP_URL")
-	imageURL, err := url.Parse(appURL)
+	imageURL, err := url.Parse(app.baseURL)
 	if err != nil {
 		return err
 	}
@@ -46,7 +44,7 @@ func (app *BotApp) sendRecognized(key, replyToken string) error {
 	var messages []linebot.Message
 	if success > 0 {
 		// success
-		thumbnailImageURL, err := url.Parse(appURL)
+		thumbnailImageURL, err := url.Parse(app.baseURL)
 		if err != nil {
 			return err
 		}

@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/idol-face-linebot/recognizer"
@@ -21,6 +20,19 @@ type BotApp struct {
 	recognizerAdmin *recognizer.Client
 	cipherBlock     cipher.Block
 	imageDir        string
+	baseURL         string
+	port            string
+}
+
+// Config type
+type Config struct {
+	ChannelSecret        string
+	ChannelToken         string
+	RecognizerAdminEmail string
+	RecognizerAdminToken string
+	RedisURL             string
+	AppBaseURL           string
+	ListenPort           string
 }
 
 // Run method
@@ -28,25 +40,26 @@ func (app *BotApp) Run(callbackPath string) error {
 	http.HandleFunc(callbackPath, app.callbackHandler)
 	http.HandleFunc("/thumbnail", thumbnailImageHandler)
 	http.HandleFunc("/image", app.imageHandler)
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
+	if err := http.ListenAndServe(":"+app.port, nil); err != nil {
 		return err
 	}
 	return nil
 }
 
 // NewBotApp function returns app inctance
-func NewBotApp() (*BotApp, error) {
+func NewBotApp(config *Config) (*BotApp, error) {
 	// linebot client
-	linebotClient, err := linebot.New(
-		os.Getenv("CHANNEL_SECRET"),
-		os.Getenv("CHANNEL_TOKEN"),
-	)
+	linebotClient, err := linebot.New(config.ChannelSecret, config.ChannelToken)
+	if err != nil {
+		return nil, err
+	}
+	// recognizer client
+	recognizerAdminClient, err := recognizer.NewClient(config.RecognizerAdminEmail, config.RecognizerAdminToken)
 	if err != nil {
 		return nil, err
 	}
 	// redis client
-	redisURL := os.Getenv("REDIS_URL")
-	parsedURL, err := url.Parse(redisURL)
+	parsedURL, err := url.Parse(config.RedisURL)
 	if err != nil {
 		return nil, err
 	}
@@ -55,15 +68,8 @@ func NewBotApp() (*BotApp, error) {
 		Addr:     parsedURL.Host,
 		Password: password,
 	})
-	// recognizer client
-	adminEmail := os.Getenv("RECOGNIZER_ADMIN_EMAIL")
-	adminToken := os.Getenv("RECOGNIZER_ADMIN_TOKEN")
-	recognizerAdminClient, err := recognizer.NewClient(adminEmail, adminToken)
-	if err != nil {
-		return nil, err
-	}
 	// cipher
-	key, err := hex.DecodeString(os.Getenv("CHANNEL_SECRET"))
+	key, err := hex.DecodeString(config.ChannelSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +84,11 @@ func NewBotApp() (*BotApp, error) {
 	}
 	return &BotApp{
 		linebot:         linebotClient,
-		redis:           redisClient,
 		recognizerAdmin: recognizerAdminClient,
+		redis:           redisClient,
 		cipherBlock:     block,
 		imageDir:        dirName,
+		baseURL:         config.AppBaseURL,
+		port:            config.ListenPort,
 	}, nil
 }
