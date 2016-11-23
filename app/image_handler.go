@@ -84,7 +84,7 @@ func (app *BotApp) getImageData(r *http.Request) ([]byte, error) {
 			imagePath, file.Name(),
 		)
 		log.Print(cmd.Args)
-		if err := cmd.Run(); err != nil {
+		if err = cmd.Run(); err != nil {
 			return nil, err
 		}
 		bytes, err := ioutil.ReadAll(file)

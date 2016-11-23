@@ -17,12 +17,12 @@ func (app *BotApp) retrieveUserToken(userID string) (string, error) {
 			return "", err
 		}
 		// register user and get authentication token as admin
-		token, err = app.recognizerAdmin.RegisterUser(userID, profile.DisplayName)
+		token, err := app.recognizerAdmin.RegisterUser(userID, profile.DisplayName)
 		if err != nil {
 			return "", err
 		}
 		// cache to redis (24 hours)
-		if err := app.redis.Set(key, token, time.Hour*24).Err(); err != nil {
+		if err = app.redis.Set(key, token, time.Hour*24).Err(); err != nil {
 			return "", err
 		}
 	} else if err != nil {

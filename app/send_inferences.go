@@ -27,7 +27,7 @@ func (app *BotApp) sendInferences(userID, replyToken, query string) error {
 		}
 		if len(labels) == 0 {
 			log.Println("empty labels")
-			_, err := app.linebot.ReplyMessage(
+			_, err = app.linebot.ReplyMessage(
 				replyToken,
 				linebot.NewTextMessage("識別対象のアイドルの名前ではないようです\xf0\x9f\x98\x9e"),
 			).Do()
