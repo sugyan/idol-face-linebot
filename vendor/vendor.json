@@ -9,6 +9,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "LT/3sy92jj0nBAdLC1Z17oUQauc=",
+			"path": "github.com/disintegration/gift",
+			"revision": "d3ddfc5a842d1ea44cd90bf4e62fb8f16bb168d6",
+			"revisionTime": "2016-09-25T01:02:36Z"
+		},
+		{
 			"checksumSHA1": "1zAw6nobdO1sQUhl+O9Rk+RBGHs=",
 			"path": "github.com/line/line-bot-sdk-go/linebot",
 			"revision": "cf2ef03b526492fbd832df3e1ace2936fcbdedcb",
