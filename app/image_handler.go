@@ -1,18 +1,16 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/draw"
 	"image/jpeg"
-	"io"
-	"io/ioutil"
+	_ "image/jpeg" // for decode
+	_ "image/png"  // for decode
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -51,84 +49,45 @@ func (app *BotApp) imageHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *BotApp) getImageData(r *http.Request) ([]byte, error) {
 	query := r.URL.Query()
+	// get messageID from key
 	key := query.Get("key")
 	messageID, err := app.decrypt(key)
 	if err != nil {
 		return nil, err
 	}
-	imagePath := filepath.Join(app.imageDir, messageID)
-	if _, err := os.Stat(imagePath); err != nil {
-		if err := app.downloadContentAsJpeg(messageID, imagePath); err != nil {
-			return nil, err
-		}
+	// generate thumbnailImage
+	xMinStr := query.Get("x_min")
+	xMaxStr := query.Get("x_max")
+	yMinStr := query.Get("y_min")
+	yMaxStr := query.Get("y_max")
+	angleStr := query.Get("angle")
+	if xMinStr == "" || xMaxStr == "" || yMinStr == "" || yMaxStr == "" || angleStr == "" {
+		return nil, fmt.Errorf("missing parameters")
 	}
-	srt := query.Get("srt")
-	w := query.Get("w")
-	h := query.Get("h")
-	if len(srt) > 0 && len(w) > 0 && len(h) > 0 {
-		file, err := ioutil.TempFile("", "")
-		if err != nil {
-			return nil, err
-		}
-		defer os.Remove(file.Name())
-		xSize, _ := strconv.Atoi(w)
-		ySize, _ := strconv.Atoi(h)
-		cmd := exec.Command(
-			"convert",
-			"-background", "black",
-			"-virtual-pixel", "background",
-			"-distort", "SRT", srt,
-			"-crop", fmt.Sprintf("%dx%d+0+0", xSize, ySize),
-			"-extent", fmt.Sprintf("%dx%d-%d+0", int(float64(xSize)*1.51+0.5), ySize, int(float64(xSize)*0.51*0.5+0.5)),
-			"-resize", "302x200>",
-			imagePath, file.Name(),
-		)
-		log.Print(cmd.Args)
-		if err = cmd.Run(); err != nil {
-			return nil, err
-		}
-		bytes, err := ioutil.ReadAll(file)
-		if err != nil {
-			return nil, err
-		}
-		// cache data 10 minutes
-		if err := app.redis.Set(cacheKey(r.URL), bytes, time.Minute*10).Err(); err != nil {
-			return nil, err
-		}
-		return bytes, nil
-	}
-	return ioutil.ReadFile(imagePath)
-}
-
-// download to tempfile, and convert (and resize if large) to jpeg
-func (app *BotApp) downloadContentAsJpeg(messageID, imagePath string) error {
-	log.Printf("get content: %s", messageID)
+	xMin, _ := strconv.Atoi(xMinStr)
+	xMax, _ := strconv.Atoi(xMaxStr)
+	yMin, _ := strconv.Atoi(yMinStr)
+	yMax, _ := strconv.Atoi(yMaxStr)
+	angle, _ := strconv.ParseFloat(angleStr, 32)
+	image.Rect(xMin, yMin, xMax, yMax)
 
 	res, err := app.linebot.GetMessageContent(messageID).Do()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Content.Close()
-	file, err := ioutil.TempFile("", "")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(file.Name())
 
-	written, err := io.Copy(file, res.Content)
+	src, _, err := image.Decode(res.Content)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if written != res.ContentLength {
-		return fmt.Errorf("content lengths mismatch. (%d:%d)", written, res.ContentLength)
+	dst := padForThumbnailImage(rotateAndCropImage(src, image.Rect(xMin, yMin, xMax, yMax), angle))
+
+	buf := bytes.NewBuffer([]byte{})
+	if err = jpeg.Encode(buf, dst, nil); err != nil {
+		return nil, err
 	}
-	if err := exec.Command(
-		"convert",
-		file.Name(), imagePath,
-	).Run(); err != nil {
-		return err
-	}
-	return nil
+	return buf.Bytes(), nil
 }
 
 func thumbnailImageHandler(w http.ResponseWriter, r *http.Request) {

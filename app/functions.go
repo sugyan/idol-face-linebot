@@ -93,19 +93,13 @@ func columnsFromRecognizedFaces(faces []recognizer.RecognizedFace, key, thumbnai
 				yMax = bounding.Y
 			}
 		}
-		xSize := float64(xMax-xMin) * 1.2
-		ySize := float64(yMax-yMin) * 1.2
-		srt := strings.Join([]string{
-			fmt.Sprintf("%.2f,%.2f", float64(xMin+xMax)*0.5, float64(yMin+yMax)*0.5),
-			"1.0",
-			fmt.Sprintf("%.2f", -face.Angle.Roll),
-			fmt.Sprintf("%.2f,%.2f", float64(xSize)*0.5, float64(ySize)*0.5),
-		}, " ")
 		values := url.Values{}
 		values.Set("key", key)
-		values.Set("srt", srt)
-		values.Set("w", strconv.Itoa(int(xSize+0.5)))
-		values.Set("h", strconv.Itoa(int(ySize+0.5)))
+		values.Set("x_min", strconv.Itoa(xMin))
+		values.Set("x_max", strconv.Itoa(xMax))
+		values.Set("y_min", strconv.Itoa(yMin))
+		values.Set("y_max", strconv.Itoa(yMax))
+		values.Set("angle", fmt.Sprintf("%.3f", face.Angle.Roll))
 		columns = append(columns, linebot.NewCarouselColumn(
 			thumbnailImageURL+"?"+values.Encode(),
 			name,
