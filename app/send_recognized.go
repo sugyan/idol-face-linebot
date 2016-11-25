@@ -1,8 +1,6 @@
 package app
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -25,15 +23,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 	if err != nil {
 		return err
 	}
-	payload, err := json.Marshal(struct {
-		Image string `json:"image"`
-	}{
-		Image: "data:" + res.ContentType + ";base64," + base64.StdEncoding.EncodeToString(bytes),
-	})
-	if err != nil {
-		return err
-	}
-	result, err := app.recognizerAdmin.RecognizeFaces(payload)
+	result, err := app.recognizerAdmin.RecognizeFaces(res.ContentType, bytes)
 	if err != nil {
 		return err
 	}

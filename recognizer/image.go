@@ -2,6 +2,7 @@ package recognizer
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,10 +10,19 @@ import (
 )
 
 // RecognizeFaces function
-func (c *Client) RecognizeFaces(data []byte) (*RecognizedResults, error) {
+func (c *Client) RecognizeFaces(contentType string, data []byte) (*RecognizedResults, error) {
 	u := *c.EndPointBase
 	u.Path = path.Join(c.EndPointBase.Path, "recognizer", "image.json")
-	res, err := c.do("POST", u.String(), bytes.NewBuffer(data))
+	entity := struct {
+		Image string `json:"image"`
+	}{
+		Image: "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(data),
+	}
+	buf := bytes.NewBuffer([]byte{})
+	if err := json.NewEncoder(buf).Encode(entity); err != nil {
+		return nil, err
+	}
+	res, err := c.do("POST", u.String(), buf)
 	if err != nil {
 		return nil, err
 	}

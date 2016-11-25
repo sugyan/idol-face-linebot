@@ -17,7 +17,7 @@ type Inference struct {
 	ID    int     `json:"id"`
 	Score float32 `json:"score"`
 	Face  *face   `json:"face"`
-	Label *label  `json:"label"`
+	Label *Label  `json:"label"`
 }
 
 type face struct {
@@ -33,7 +33,8 @@ type photo struct {
 	PostedAt  *time.Time `json:"posted_at"`
 }
 
-type label struct {
+// Label type
+type Label struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`

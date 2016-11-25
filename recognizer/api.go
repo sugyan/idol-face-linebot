@@ -41,7 +41,7 @@ func (c *Client) RegisterUser(userID, displayName string) (string, error) {
 }
 
 // Labels method
-func (c *Client) Labels(query string) ([]label, error) {
+func (c *Client) Labels(query string) ([]Label, error) {
 	values := url.Values{}
 	values.Add("q", query)
 	u := *c.EndPointBase
@@ -53,7 +53,7 @@ func (c *Client) Labels(query string) ([]label, error) {
 	}
 	defer res.Body.Close()
 
-	results := []label{}
+	results := []Label{}
 	if err := json.NewDecoder(res.Body).Decode(&results); err != nil {
 		return nil, err
 	}
