@@ -1,12 +1,17 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"path"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/idol-face-linebot/recognizer"
@@ -19,11 +24,16 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 		return err
 	}
 	defer res.Content.Close()
-	bytes, err := ioutil.ReadAll(res.Content)
+	data, err := ioutil.ReadAll(res.Content)
 	if err != nil {
 		return err
 	}
-	result, err := app.recognizerAdmin.RecognizeFaces(res.ContentType, bytes)
+	srcImage, format, err := image.Decode(bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	log.Printf("%s image (%v)", format, srcImage.Bounds().Size())
+	result, err := app.recognizerAdmin.RecognizeFaces(res.ContentType, data)
 	if err != nil {
 		return err
 	}
@@ -65,6 +75,23 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 		altTextLines := []string{}
 		for _, column := range columns {
 			altTextLines = append(altTextLines, fmt.Sprintf("%s [%s]", column.Title, column.Text))
+			// create cache
+			parsed, err := url.Parse(column.ThumbnailImageURL)
+			if err != nil {
+				return err
+			}
+			target, err := cropTargetFromQuery(parsed.Query())
+			if err != nil {
+				return err
+			}
+			dstImage := padForThumbnailImage(rotateAndCropImage(srcImage, target.rect, target.angle))
+			buf := bytes.NewBuffer([]byte{})
+			if err = jpeg.Encode(buf, dstImage, nil); err != nil {
+				return err
+			}
+			if err = app.redis.Set(cacheKey(parsed), buf.Bytes(), time.Hour*24).Err(); err != nil {
+				return err
+			}
 		}
 		messages = []linebot.Message{
 			linebot.NewTextMessage(text),

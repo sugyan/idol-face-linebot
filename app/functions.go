@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"image"
 	"math"
 	"math/rand"
 	"net/url"
@@ -13,6 +14,11 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 	"github.com/sugyan/idol-face-linebot/recognizer"
 )
+
+type cropTarget struct {
+	rect  image.Rectangle
+	angle float64
+}
 
 func columnsFromInferences(inferences []recognizer.Inference) []*linebot.CarouselColumn {
 	columns := make([]*linebot.CarouselColumn, 0, 5)
@@ -111,4 +117,24 @@ func columnsFromRecognizedFaces(faces []recognizer.RecognizedFace, key, thumbnai
 		))
 	}
 	return columns
+}
+
+func cropTargetFromQuery(query url.Values) (*cropTarget, error) {
+	xMinStr := query.Get("x_min")
+	xMaxStr := query.Get("x_max")
+	yMinStr := query.Get("y_min")
+	yMaxStr := query.Get("y_max")
+	angleStr := query.Get("angle")
+	if xMinStr == "" || xMaxStr == "" || yMinStr == "" || yMaxStr == "" || angleStr == "" {
+		return nil, fmt.Errorf("missing parameters")
+	}
+	xMin, _ := strconv.Atoi(xMinStr)
+	xMax, _ := strconv.Atoi(xMaxStr)
+	yMin, _ := strconv.Atoi(yMinStr)
+	yMax, _ := strconv.Atoi(yMaxStr)
+	angle, _ := strconv.ParseFloat(angleStr, 32)
+	return &cropTarget{
+		rect:  image.Rect(xMin, yMin, xMax, yMax),
+		angle: angle,
+	}, nil
 }

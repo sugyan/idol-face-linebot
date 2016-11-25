@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"fmt"
 	"image"
 	"image/draw"
 	"image/jpeg"
@@ -19,18 +18,21 @@ import (
 
 func (app *BotApp) imageHandler(w http.ResponseWriter, r *http.Request) {
 	// return 304 if "If-Modified-Since" header exists.
-	if len(r.Header.Get("If-Modified-Since")) > 0 {
-		w.WriteHeader(http.StatusNotModified)
-		return
-	}
+	// if len(r.Header.Get("If-Modified-Since")) > 0 {
+	// 	w.WriteHeader(http.StatusNotModified)
+	// 	return
+	// }
 
 	var bytes []byte
 	bytes, err := app.redis.Get(cacheKey(r.URL)).Bytes()
 	if err == redis.Nil {
-		bytes, err = app.getImageData(r)
+		bytes, err = app.getImageData(r.URL.Query())
 		if err != nil {
 			log.Printf("get image error: %s", err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if err = app.redis.Set(cacheKey(r.URL), bytes, time.Hour*24).Err(); err != nil {
 			return
 		}
 	} else if err != nil {
@@ -40,48 +42,37 @@ func (app *BotApp) imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Content-Length", strconv.Itoa(len(bytes)))
-	w.Header().Set("Last-Modified", time.Now().Format(http.TimeFormat))
+	// w.Header().Set("Last-Modified", time.Now().Format(http.TimeFormat))
 	_, err = w.Write(bytes)
 	if err != nil {
 		log.Print(err.Error())
 	}
 }
 
-func (app *BotApp) getImageData(r *http.Request) ([]byte, error) {
-	query := r.URL.Query()
-	// get messageID from key
+func (app *BotApp) getImageData(query url.Values) ([]byte, error) {
+	// get content image from encrypted key
 	key := query.Get("key")
 	messageID, err := app.decrypt(key)
 	if err != nil {
 		return nil, err
 	}
-	// generate thumbnailImage
-	xMinStr := query.Get("x_min")
-	xMaxStr := query.Get("x_max")
-	yMinStr := query.Get("y_min")
-	yMaxStr := query.Get("y_max")
-	angleStr := query.Get("angle")
-	if xMinStr == "" || xMaxStr == "" || yMinStr == "" || yMaxStr == "" || angleStr == "" {
-		return nil, fmt.Errorf("missing parameters")
-	}
-	xMin, _ := strconv.Atoi(xMinStr)
-	xMax, _ := strconv.Atoi(xMaxStr)
-	yMin, _ := strconv.Atoi(yMinStr)
-	yMax, _ := strconv.Atoi(yMaxStr)
-	angle, _ := strconv.ParseFloat(angleStr, 32)
-	image.Rect(xMin, yMin, xMax, yMax)
-
+	log.Printf("get content %s", messageID)
 	res, err := app.linebot.GetMessageContent(messageID).Do()
 	if err != nil {
 		return nil, err
 	}
 	defer res.Content.Close()
 
+	// generate thumbnailImage
+	target, err := cropTargetFromQuery(query)
+	if err != nil {
+		return nil, err
+	}
 	src, _, err := image.Decode(res.Content)
 	if err != nil {
 		return nil, err
 	}
-	dst := padForThumbnailImage(rotateAndCropImage(src, image.Rect(xMin, yMin, xMax, yMax), angle))
+	dst := padForThumbnailImage(rotateAndCropImage(src, target.rect, target.angle))
 
 	buf := bytes.NewBuffer([]byte{})
 	if err = jpeg.Encode(buf, dst, nil); err != nil {
