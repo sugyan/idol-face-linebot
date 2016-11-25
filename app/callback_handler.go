@@ -18,28 +18,26 @@ func (app *BotApp) callbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, event := range events {
-		switch event.Type {
-		case linebot.EventTypeFollow:
-			token, err := app.retrieveUserToken(event.Source.UserID)
-			if err != nil {
-				log.Print(err)
-				continue
+		go func(event *linebot.Event) {
+			switch event.Type {
+			case linebot.EventTypeFollow:
+				token, err := app.retrieveUserToken(event.Source.UserID)
+				if err != nil {
+					log.Print(err)
+				}
+				log.Printf("token: %v", token)
+			case linebot.EventTypeMessage:
+				if err := app.handleMessage(event); err != nil {
+					log.Print(err)
+				}
+			case linebot.EventTypePostback:
+				if err := app.handlePostback(event); err != nil {
+					log.Print(err)
+				}
+			default:
+				log.Printf("not message/postback event: %v", event)
 			}
-			log.Printf("token: %v", token)
-		case linebot.EventTypeMessage:
-			if err := app.handleMessage(event); err != nil {
-				log.Print(err)
-				continue
-			}
-		case linebot.EventTypePostback:
-			if err := app.handlePostback(event); err != nil {
-				log.Print(err)
-				continue
-			}
-		default:
-			log.Printf("not message/postback event: %v", event)
-			continue
-		}
+		}(event)
 	}
 }
 
