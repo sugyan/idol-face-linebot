@@ -38,8 +38,8 @@ type Config struct {
 // Run method
 func (app *BotApp) Run(callbackPath string) error {
 	http.HandleFunc(callbackPath, app.callbackHandler)
-	http.HandleFunc("/thumbnail", thumbnailImageHandler)
 	http.HandleFunc("/image", app.imageHandler)
+	http.HandleFunc("/face", app.faceHandler)
 	if err := http.ListenAndServe(":"+app.port, nil); err != nil {
 		return err
 	}

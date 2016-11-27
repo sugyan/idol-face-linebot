@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"image"
-	"image/draw"
 	"image/jpeg"
 	_ "image/jpeg" // for decode
 	_ "image/png"  // for decode
@@ -18,10 +17,10 @@ import (
 
 func (app *BotApp) imageHandler(w http.ResponseWriter, r *http.Request) {
 	// return 304 if "If-Modified-Since" header exists.
-	// if len(r.Header.Get("If-Modified-Since")) > 0 {
-	// 	w.WriteHeader(http.StatusNotModified)
-	// 	return
-	// }
+	if len(r.Header.Get("If-Modified-Since")) > 0 {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
 
 	var bytes []byte
 	bytes, err := app.redis.Get(cacheKey(r.URL)).Bytes()
@@ -42,7 +41,7 @@ func (app *BotApp) imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Content-Length", strconv.Itoa(len(bytes)))
-	// w.Header().Set("Last-Modified", time.Now().Format(http.TimeFormat))
+	w.Header().Set("Last-Modified", time.Now().Format(http.TimeFormat))
 	_, err = w.Write(bytes)
 	if err != nil {
 		log.Print(err.Error())
@@ -81,10 +80,16 @@ func (app *BotApp) getImageData(query url.Values) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func thumbnailImageHandler(w http.ResponseWriter, r *http.Request) {
+func (app *BotApp) faceHandler(w http.ResponseWriter, r *http.Request) {
+	// return 304 if "If-Modified-Since" header exists.
+	if len(r.Header.Get("If-Modified-Since")) > 0 {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	query := r.URL.Query()
 	// fetch original image
-	res, err := http.Get(query.Get("image_url"))
+	res, err := app.recognizerAdmin.GetFaceImage(query.Get("id"))
 	if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -98,11 +103,12 @@ func thumbnailImageHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// generate new image, draw
-	img := image.NewRGBA(image.Rect(0, 0, 168, 112))
-	draw.Draw(img, image.Rect(0, 0, 112, 112).Add(image.Pt(28, 0)), face, image.Pt(0, 0), draw.Src)
 
-	jpeg.Encode(w, img, &jpeg.Options{Quality: 95})
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Last-Modified", time.Now().Format(http.TimeFormat))
+	if err = jpeg.Encode(w, padForThumbnailImage(face), nil); err != nil {
+		log.Print(err.Error())
+	}
 }
 
 func cacheKey(u *url.URL) string {

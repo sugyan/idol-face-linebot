@@ -40,10 +40,10 @@ func columnsFromInferences(inferences []recognizer.Inference) []*linebot.Carouse
 		if len([]rune(text)) > 60 {
 			text = string([]rune(text)[0:59]) + "…"
 		}
-		thumbnailImageURL, _ := url.Parse(os.Getenv("APP_URL") + "/thumbnail")
+		faceImageURL, _ := url.Parse(os.Getenv("APP_URL") + "/face")
 		values := url.Values{}
-		values.Set("image_url", inference.Face.ImageURL)
-		thumbnailImageURL.RawQuery = values.Encode()
+		values.Set("id", strconv.Itoa(inference.Face.ID))
+		faceImageURL.RawQuery = values.Encode()
 		accept, _ := json.Marshal(postbackData{
 			Action:      postbackActionAccept,
 			FaceID:      inference.Face.ID,
@@ -57,7 +57,7 @@ func columnsFromInferences(inferences []recognizer.Inference) []*linebot.Carouse
 		columns = append(
 			columns,
 			linebot.NewCarouselColumn(
-				thumbnailImageURL.String(),
+				faceImageURL.String(),
 				title,
 				text,
 				linebot.NewURITemplateAction(
