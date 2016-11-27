@@ -18,7 +18,7 @@ type BotApp struct {
 	linebot         *linebot.Client
 	redis           *redis.Client
 	recognizerAdmin *recognizer.Client
-	cipherBlock     cipher.Block
+	cipher          cipher.Block
 	imageDir        string
 	baseURL         string
 	port            string
@@ -86,7 +86,7 @@ func NewBotApp(config *Config) (*BotApp, error) {
 		linebot:         linebotClient,
 		recognizerAdmin: recognizerAdminClient,
 		redis:           redisClient,
-		cipherBlock:     block,
+		cipher:          block,
 		imageDir:        dirName,
 		baseURL:         config.AppBaseURL,
 		port:            config.ListenPort,

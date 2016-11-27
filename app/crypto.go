@@ -15,7 +15,7 @@ func (app *BotApp) encrypt(src string) (string, error) {
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return "", err
 	}
-	stream := cipher.NewCFBEncrypter(app.cipherBlock, iv)
+	stream := cipher.NewCFBEncrypter(app.cipher, iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], plain)
 	return base64.RawStdEncoding.EncodeToString(ciphertext), nil
 }
@@ -27,7 +27,7 @@ func (app *BotApp) decrypt(src string) (string, error) {
 	}
 	iv := ciphertext[:aes.BlockSize]
 	ciphertext = ciphertext[aes.BlockSize:]
-	stream := cipher.NewCFBDecrypter(app.cipherBlock, iv)
+	stream := cipher.NewCFBDecrypter(app.cipher, iv)
 	stream.XORKeyStream(ciphertext, ciphertext)
 	return string(ciphertext), nil
 }
