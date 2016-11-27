@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -19,7 +18,6 @@ type BotApp struct {
 	redis           *redis.Client
 	recognizerAdmin *recognizer.Client
 	cipher          cipher.Block
-	imageDir        string
 	baseURL         string
 	port            string
 }
@@ -77,17 +75,11 @@ func NewBotApp(config *Config) (*BotApp, error) {
 	if err != nil {
 		return nil, err
 	}
-	// imageDir
-	dirName, err := ioutil.TempDir("", "image")
-	if err != nil {
-		return nil, err
-	}
 	return &BotApp{
 		linebot:         linebotClient,
 		recognizerAdmin: recognizerAdminClient,
 		redis:           redisClient,
 		cipher:          block,
-		imageDir:        dirName,
 		baseURL:         config.AppBaseURL,
 		port:            config.ListenPort,
 	}, nil
