@@ -88,7 +88,7 @@ func (app *BotApp) faceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// fetch original image
-	u := app.recognizerAdmin.EndPointBase
+	u := *app.recognizerAdmin.EndPointBase
 	u.Path = path.Join(u.Path, "faces", r.URL.Query().Get("id"), "image")
 	res, err := http.Get(u.String())
 	if err != nil {
