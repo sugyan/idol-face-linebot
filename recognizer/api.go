@@ -127,13 +127,6 @@ func (c *Client) RejectInference(inferenceID int) error {
 	return nil
 }
 
-// GetFaceImage method
-func (c *Client) GetFaceImage(faceID string) (*http.Response, error) {
-	u := *c.EndPointBase
-	u.Path = path.Join(c.EndPointBase.Path, "face", faceID, "image")
-	return c.do("GET", u.String(), nil)
-}
-
 func (c *Client) do(method, urlStr string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, urlStr, body)
 	if err != nil {

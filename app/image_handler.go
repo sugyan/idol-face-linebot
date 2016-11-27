@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"time"
 
@@ -86,10 +87,10 @@ func (app *BotApp) faceHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
-
-	query := r.URL.Query()
 	// fetch original image
-	res, err := app.recognizerAdmin.GetFaceImage(query.Get("id"))
+	u := app.recognizerAdmin.EndPointBase
+	u.Path = path.Join(u.Path, "faces", r.URL.Query().Get("id"), "image")
+	res, err := http.Get(u.String())
 	if err != nil {
 		log.Print(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
