@@ -61,7 +61,10 @@ func NewBotApp(config *Config) (*BotApp, error) {
 	if err != nil {
 		return nil, err
 	}
-	password, _ := parsedURL.User.Password()
+	password := ""
+	if parsedURL.User != nil {
+		password, _ = parsedURL.User.Password()
+	}
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     parsedURL.Host,
 		Password: password,

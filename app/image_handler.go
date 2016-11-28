@@ -75,7 +75,7 @@ func (app *BotApp) getImageData(query url.Values) ([]byte, error) {
 	dst := padForThumbnailImage(rotateAndCropImage(src, target.rect, target.angle))
 
 	buf := bytes.NewBuffer([]byte{})
-	if err = jpeg.Encode(buf, dst, nil); err != nil {
+	if err = jpeg.Encode(buf, dst, &jpeg.Options{Quality: 95}); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -107,7 +107,7 @@ func (app *BotApp) faceHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Last-Modified", time.Now().Format(http.TimeFormat))
-	if err = jpeg.Encode(w, padForThumbnailImage(face), nil); err != nil {
+	if err = jpeg.Encode(w, padForThumbnailImage(face), &jpeg.Options{Quality: 95}); err != nil {
 		log.Print(err.Error())
 	}
 }

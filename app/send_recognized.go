@@ -87,7 +87,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 			}
 			dstImage := padForThumbnailImage(rotateAndCropImage(srcImage, target.rect, target.angle))
 			buf := bytes.NewBuffer([]byte{})
-			if err = jpeg.Encode(buf, dstImage, nil); err != nil {
+			if err = jpeg.Encode(buf, dstImage, &jpeg.Options{Quality: 95}); err != nil {
 				return err
 			}
 			if err = app.redis.Set(cacheKey(parsed), buf.Bytes(), time.Hour*24).Err(); err != nil {
