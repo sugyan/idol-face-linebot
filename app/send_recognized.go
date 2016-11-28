@@ -37,6 +37,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("result: %s", result.Message)
 	// check results, extract succeeded high scored results
 	success := 0
 	succeededFaces := make([]recognizer.RecognizedFace, 0, 5)
