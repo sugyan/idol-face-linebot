@@ -35,7 +35,7 @@ func (app *BotApp) callbackHandler(w http.ResponseWriter, r *http.Request) {
 					log.Print(err)
 				}
 			default:
-				log.Printf("not message/postback event: %v", event)
+				log.Printf("not message/postback event: %#v", event)
 			}
 		}(event)
 	}
