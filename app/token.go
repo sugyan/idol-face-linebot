@@ -17,7 +17,7 @@ func (app *BotApp) retrieveUserToken(userID string) (string, error) {
 			return "", err
 		}
 		// register user and get authentication token as admin
-		token, err := app.recognizerAdmin.RegisterUser(userID, profile.DisplayName)
+		token, err = app.recognizerAdmin.RegisterUser(userID, profile.DisplayName)
 		if err != nil {
 			return "", err
 		}
