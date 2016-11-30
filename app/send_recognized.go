@@ -39,19 +39,13 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 	}
 	log.Printf("result: %s", result.Message)
 	// check results, extract succeeded high scored results
-	success := 0
-	succeededFaces := make([]recognizer.RecognizedFace, 0, 5)
+	succeededFaces := make([]recognizer.RecognizedFace, 0, 10)
 	sort.Sort(recognizer.ByTopValue(result.Faces))
 	for _, face := range result.Faces {
 		top := face.Recognize[0]
-		if !(top.Label.ID > 0 && top.Value > 0.5) {
-			continue
+		if top.Label.ID > 0 && top.Value > 0.5 {
+			succeededFaces = append(succeededFaces, face)
 		}
-		success++
-		if len(succeededFaces) >= 5 {
-			continue
-		}
-		succeededFaces = append(succeededFaces, face)
 	}
 
 	// encrypt message ID and pass URL
@@ -60,47 +54,53 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 		return err
 	}
 	var messages []linebot.Message
-	if success > 0 {
+	if len(succeededFaces) > 0 {
 		// success
 		thumbnailImageURL, err := url.Parse(app.baseURL)
 		if err != nil {
 			return err
 		}
 		thumbnailImageURL.Path = path.Join(thumbnailImageURL.Path, "image")
-		columns := columnsFromRecognizedFaces(succeededFaces, key, thumbnailImageURL.String())
 
-		text := fmt.Sprintf("%d件の顔を識別しました\xf0\x9f\x98\x80", success)
-		if len(result.Faces) > len(columns) {
-			text = fmt.Sprintf("%d件中 %s", len(result.Faces), text)
-		}
-		altTextLines := []string{}
-		for _, column := range columns {
-			altTextLines = append(altTextLines, fmt.Sprintf("%s [%s]", column.Title, column.Text))
-			// create cache
-			parsed, err := url.Parse(column.ThumbnailImageURL)
-			if err != nil {
-				return err
+		messages = make([]linebot.Message, 0)
+		for i := 0; i < len(succeededFaces); i += 5 {
+			j := i + 5
+			if j > len(succeededFaces) {
+				j = len(succeededFaces)
 			}
-			target, err := cropTargetFromQuery(parsed.Query())
-			if err != nil {
-				return err
+			faces := succeededFaces[i:j]
+			columns := columnsFromRecognizedFaces(faces, key, thumbnailImageURL.String())
+			altTextLines := make([]string, 0, 5)
+			for _, column := range columns {
+				altTextLines = append(altTextLines, fmt.Sprintf("%s [%s]", column.Title, column.Text))
+				// create cache
+				parsed, err := url.Parse(column.ThumbnailImageURL)
+				if err != nil {
+					return err
+				}
+				target, err := cropTargetFromQuery(parsed.Query())
+				if err != nil {
+					return err
+				}
+				dstImage := padForThumbnailImage(rotateAndCropImage(srcImage, target.rect, target.angle))
+				buf := bytes.NewBuffer([]byte{})
+				if err = jpeg.Encode(buf, dstImage, &jpeg.Options{Quality: 95}); err != nil {
+					return err
+				}
+				if err = app.redis.Set(cacheKey(parsed), buf.Bytes(), time.Hour*24).Err(); err != nil {
+					return err
+				}
 			}
-			dstImage := padForThumbnailImage(rotateAndCropImage(srcImage, target.rect, target.angle))
-			buf := bytes.NewBuffer([]byte{})
-			if err = jpeg.Encode(buf, dstImage, &jpeg.Options{Quality: 95}); err != nil {
-				return err
-			}
-			if err = app.redis.Set(cacheKey(parsed), buf.Bytes(), time.Hour*24).Err(); err != nil {
-				return err
-			}
-		}
-		messages = []linebot.Message{
-			linebot.NewTextMessage(text),
-			linebot.NewTemplateMessage(
+			messages = append(messages, linebot.NewTemplateMessage(
 				strings.Join(altTextLines, "\n"),
 				linebot.NewCarouselTemplate(columns...),
-			),
+			))
 		}
+		text := fmt.Sprintf("%d件の顔を識別しました\xf0\x9f\x98\x80", len(succeededFaces))
+		if len(result.Faces) > len(succeededFaces) {
+			text = fmt.Sprintf("%d件中 %s", len(result.Faces), text)
+		}
+		messages = append([]linebot.Message{linebot.NewTextMessage(text)}, messages...)
 	} else {
 		// failure
 		var text string
