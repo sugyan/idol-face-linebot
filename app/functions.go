@@ -78,7 +78,7 @@ func columnsFromRecognizedFaces(faces []recognizer.RecognizedFace, key, thumbnai
 		top := face.Recognize[0]
 		name := top.Label.Name
 		if len(top.Label.Description) > 0 {
-			name += " (" + strings.Split(top.Label.Description, "\r\n")[0] + ")"
+			name += " (" + strings.Replace(top.Label.Description, "\r\n", ", ", -1) + ")"
 		}
 		// thumbnailImageURL query parameters
 		xMin := math.MaxInt32
