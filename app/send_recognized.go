@@ -37,16 +37,16 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("result: %s", result.Message)
 	// check results, extract succeeded high scored results
-	succeededFaces := make([]recognizer.RecognizedFace, 0, 10)
+	succeeded := make([]recognizer.RecognizedFace, 0, 10)
 	sort.Sort(recognizer.ByTopValue(result.Faces))
 	for _, face := range result.Faces {
 		top := face.Recognize[0]
 		if top.Label.ID > 0 && top.Value > 0.5 {
-			succeededFaces = append(succeededFaces, face)
+			succeeded = append(succeeded, face)
 		}
 	}
+	log.Printf("result: %s (succeeded: %d)", result.Message, len(succeeded))
 
 	// encrypt message ID and pass URL
 	key, err := app.encrypt(messageID)
@@ -54,7 +54,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 		return err
 	}
 	var messages []linebot.Message
-	if len(succeededFaces) > 0 {
+	if len(succeeded) > 0 {
 		// success
 		thumbnailImageURL, err := url.Parse(app.baseURL)
 		if err != nil {
@@ -63,12 +63,12 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 		thumbnailImageURL.Path = path.Join(thumbnailImageURL.Path, "image")
 
 		messages = make([]linebot.Message, 0)
-		for i := 0; i < len(succeededFaces); i += 5 {
+		for i := 0; i < len(succeeded); i += 5 {
 			j := i + 5
-			if j > len(succeededFaces) {
-				j = len(succeededFaces)
+			if j > len(succeeded) {
+				j = len(succeeded)
 			}
-			faces := succeededFaces[i:j]
+			faces := succeeded[i:j]
 			columns := columnsFromRecognizedFaces(faces, key, thumbnailImageURL.String())
 			altTextLines := make([]string, 0, 5)
 			for _, column := range columns {
@@ -96,8 +96,8 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 				linebot.NewCarouselTemplate(columns...),
 			))
 		}
-		text := fmt.Sprintf("%d件の顔を識別しました\xf0\x9f\x98\x80", len(succeededFaces))
-		if len(result.Faces) > len(succeededFaces) {
+		text := fmt.Sprintf("%d件の顔を識別しました\xf0\x9f\x98\x80", len(succeeded))
+		if len(result.Faces) > len(succeeded) {
 			text = fmt.Sprintf("%d件中 %s", len(result.Faces), text)
 		}
 		messages = append([]linebot.Message{linebot.NewTextMessage(text)}, messages...)
