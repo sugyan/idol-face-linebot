@@ -61,9 +61,9 @@ func (c *Client) Labels(query string) ([]Label, error) {
 }
 
 // Inferences method
-func (c *Client) Inferences(ids []int) (*InferencesResult, error) {
+func (c *Client) Inferences(ids []int, score float64) (*InferencesResult, error) {
 	values := url.Values{}
-	values.Add("min_score", "0.5")
+	values.Add("min_score", strconv.FormatFloat(score, 'f', 2, 32))
 	for _, id := range ids {
 		values.Add("label_id[]", strconv.Itoa(id))
 	}

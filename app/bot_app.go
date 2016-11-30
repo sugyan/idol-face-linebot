@@ -12,6 +12,12 @@ import (
 	"gopkg.in/redis.v5"
 )
 
+// variables
+var (
+	RecognizedScoreThreshold = 0.7
+	InferencesScoreThreshold = 0.7
+)
+
 // BotApp type
 type BotApp struct {
 	linebot         *linebot.Client

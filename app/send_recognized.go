@@ -42,7 +42,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 	sort.Sort(recognizer.ByTopValue(result.Faces))
 	for _, face := range result.Faces {
 		top := face.Recognize[0]
-		if top.Label.ID > 0 && top.Value > 0.5 {
+		if top.Label.ID > 0 && top.Value > RecognizedScoreThreshold {
 			succeeded = append(succeeded, face)
 		}
 	}

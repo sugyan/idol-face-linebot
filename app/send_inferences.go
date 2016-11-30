@@ -37,7 +37,7 @@ func (app *BotApp) sendInferences(userID, replyToken, query string) error {
 			labelIDs = append(labelIDs, label.ID)
 		}
 	}
-	result, err := client.Inferences(labelIDs)
+	result, err := client.Inferences(labelIDs, InferencesScoreThreshold)
 	if err != nil {
 		return err
 	}
