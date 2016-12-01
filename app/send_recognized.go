@@ -73,25 +73,25 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 			altTextLines := make([]string, 0, 5)
 			for _, column := range columns {
 				altTextLines = append(altTextLines, fmt.Sprintf("%s [%s]", column.Title, column.Text))
-				if i == 0 {
-					// create cache
-					parsed, err := url.Parse(column.ThumbnailImageURL)
-					if err != nil {
-						return err
-					}
-					target, err := cropTargetFromQuery(parsed.Query())
-					if err != nil {
-						return err
-					}
+				parsed, err := url.Parse(column.ThumbnailImageURL)
+				if err != nil {
+					return err
+				}
+				target, err := cropTargetFromQuery(parsed.Query())
+				if err != nil {
+					return err
+				}
+				// create cache by groutine
+				go func(target *cropTarget) {
 					dstImage := padForThumbnailImage(rotateAndCropImage(srcImage, target.rect, target.angle))
 					buf := bytes.NewBuffer([]byte{})
 					if err = jpeg.Encode(buf, dstImage, &jpeg.Options{Quality: 95}); err != nil {
-						return err
+						log.Println(err)
 					}
 					if err = app.redis.Set(cacheKey(parsed), buf.Bytes(), time.Hour*24).Err(); err != nil {
-						return err
+						log.Println(err)
 					}
-				}
+				}(target)
 			}
 			messages = append(messages, linebot.NewTemplateMessage(
 				strings.Join(altTextLines, "\n"),
