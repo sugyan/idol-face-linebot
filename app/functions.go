@@ -1,13 +1,10 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 	"image"
 	"math"
-	"math/rand"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 
@@ -18,58 +15,6 @@ import (
 type cropTarget struct {
 	rect  image.Rectangle
 	angle float64
-}
-
-func columnsFromInferences(inferences []recognizer.Inference) []*linebot.CarouselColumn {
-	columns := make([]*linebot.CarouselColumn, 0, 5)
-	ids := rand.Perm(len(inferences))
-	num := 5
-	if len(ids) < num {
-		num = len(ids)
-	}
-	for i := 0; i < num; i++ {
-		inference := inferences[ids[i]]
-		title := fmt.Sprintf("%d:[%.2f] %s", inference.Face.ID, inference.Score*100.0, inference.Label.Name)
-		if inference.Label.Description != "" {
-			title += " (" + strings.Replace(inference.Label.Description, "\r\n", ", ", -1) + ")"
-		}
-		if len([]rune(title)) > 40 {
-			title = string([]rune(title)[0:39]) + "…"
-		}
-		text := strings.Replace(inference.Face.Photo.Caption, "\n", " ", -1)
-		if len([]rune(text)) > 60 {
-			text = string([]rune(text)[0:59]) + "…"
-		}
-		faceImageURL, _ := url.Parse(os.Getenv("APP_URL") + "/face")
-		values := url.Values{}
-		values.Set("id", strconv.Itoa(inference.Face.ID))
-		faceImageURL.RawQuery = values.Encode()
-		accept, _ := json.Marshal(postbackData{
-			Action:      postbackActionAccept,
-			FaceID:      inference.Face.ID,
-			InferenceID: inference.ID,
-		})
-		reject, _ := json.Marshal(postbackData{
-			Action:      postbackActionReject,
-			FaceID:      inference.Face.ID,
-			InferenceID: inference.ID,
-		})
-		columns = append(
-			columns,
-			linebot.NewCarouselColumn(
-				faceImageURL.String(),
-				title,
-				text,
-				linebot.NewURITemplateAction(
-					"\xf0\x9f\x94\x8d くわしく",
-					inference.Face.Photo.SourceURL,
-				),
-				linebot.NewPostbackTemplateAction("\xe2\xad\x95 あってる", string(accept), ""),
-				linebot.NewPostbackTemplateAction("\xe2\x9d\x8c ちがうよ", string(reject), ""),
-			),
-		)
-	}
-	return columns
 }
 
 func columnsFromRecognizedFaces(faces []recognizer.RecognizedFace, key, thumbnailImageURL string) []*linebot.CarouselColumn {
@@ -110,7 +55,7 @@ func columnsFromRecognizedFaces(faces []recognizer.RecognizedFace, key, thumbnai
 			thumbnailImageURL+"?"+values.Encode(),
 			name,
 			fmt.Sprintf("%.2f", top.Value*100.0),
-			linebot.NewURITemplateAction(
+			linebot.NewURIAction(
 				"@"+top.Label.Twitter,
 				"https://twitter.com/"+top.Label.Twitter,
 			),

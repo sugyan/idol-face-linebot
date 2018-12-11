@@ -43,19 +43,6 @@ func (app *BotApp) callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *BotApp) handleMessage(event *linebot.Event) error {
 	switch message := event.Message.(type) {
-	case *linebot.TextMessage:
-		if event.Source.Type != linebot.EventSourceTypeUser {
-			// not from user (ignore)
-			return nil
-		}
-		log.Printf("text message from %s: %s", event.Source.UserID, message.Text)
-		query := message.Text
-		if message.Text == "all" {
-			query = ""
-		}
-		if err := app.sendInferences(event.Source.UserID, event.ReplyToken, query); err != nil {
-			return fmt.Errorf("send error: %v", err)
-		}
 	case *linebot.ImageMessage:
 		log.Printf("image message from %v: %s", event.Source, message.ID)
 		if err := app.sendRecognized(message.ID, event.ReplyToken); err != nil {

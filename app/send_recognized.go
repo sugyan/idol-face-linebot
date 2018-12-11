@@ -53,7 +53,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 	if err != nil {
 		return err
 	}
-	var messages []linebot.Message
+	var messages []linebot.SendingMessage
 	if len(succeeded) > 0 {
 		// success
 		thumbnailImageURL, err := url.Parse(app.baseURL)
@@ -62,7 +62,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 		}
 		thumbnailImageURL.Path = path.Join(thumbnailImageURL.Path, "image")
 
-		messages = make([]linebot.Message, 0)
+		messages = make([]linebot.SendingMessage, 0)
 		for i := 0; i < len(succeeded); i += 5 {
 			j := i + 5
 			if j > len(succeeded) {
@@ -102,7 +102,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 		if len(result.Faces) > len(succeeded) {
 			text = fmt.Sprintf("%d件中 %s", len(result.Faces), text)
 		}
-		messages = append([]linebot.Message{linebot.NewTextMessage(text)}, messages...)
+		messages = append([]linebot.SendingMessage{linebot.NewTextMessage(text)}, messages...)
 	} else {
 		// failure
 		var text string
@@ -111,7 +111,7 @@ func (app *BotApp) sendRecognized(messageID, replyToken string) error {
 		} else {
 			text = "顔を検出できませんでした"
 		}
-		messages = []linebot.Message{
+		messages = []linebot.SendingMessage{
 			linebot.NewTextMessage(text + "\xf0\x9f\x98\x9e"),
 		}
 	}
