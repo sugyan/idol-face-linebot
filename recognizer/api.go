@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strconv"
 )
 
 // RegisterUser method
@@ -58,73 +57,6 @@ func (c *Client) Labels(query string) ([]Label, error) {
 		return nil, err
 	}
 	return results, nil
-}
-
-// Inferences method
-func (c *Client) Inferences(ids []int, score float64) (*InferencesResult, error) {
-	values := url.Values{}
-	values.Add("min_score", strconv.FormatFloat(score, 'f', 2, 32))
-	for _, id := range ids {
-		values.Add("label_id[]", strconv.Itoa(id))
-	}
-	u := *c.EndPointBase
-	u.RawQuery = values.Encode()
-	u.Path = path.Join(c.EndPointBase.Path, "inferences.json")
-	res, err := c.do("GET", u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	result := &InferencesResult{}
-	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-// AcceptInference method
-func (c *Client) AcceptInference(inferenceID int) error {
-	u := *c.EndPointBase
-	u.Path = path.Join(c.EndPointBase.Path, "inferences", strconv.Itoa(inferenceID), "accept.json")
-	res, err := c.do("POST", u.String(), nil)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	result := &struct {
-		Success bool `json:"success"`
-	}{}
-	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
-		return err
-	}
-	if !result.Success {
-		return errors.New("accept failed")
-	}
-	return nil
-}
-
-// RejectInference method
-func (c *Client) RejectInference(inferenceID int) error {
-	u := *c.EndPointBase
-	u.Path = path.Join(c.EndPointBase.Path, "inferences", strconv.Itoa(inferenceID), "reject.json")
-	res, err := c.do("POST", u.String(), nil)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	result := &struct {
-		Success bool `json:"success"`
-	}{}
-	if err = json.NewDecoder(res.Body).Decode(result); err != nil {
-		return err
-	}
-	if !result.Success {
-		return errors.New("reject failed")
-	}
-	return nil
 }
 
 func (c *Client) do(method, urlStr string, body io.Reader) (*http.Response, error) {

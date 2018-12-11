@@ -15,7 +15,6 @@ import (
 // variables
 var (
 	RecognizedScoreThreshold = 0.7
-	InferencesScoreThreshold = 0.7
 )
 
 // BotApp type

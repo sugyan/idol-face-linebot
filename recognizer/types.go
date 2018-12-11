@@ -1,38 +1,5 @@
 package recognizer
 
-import (
-	"time"
-)
-
-// InferencesResult type
-type InferencesResult struct {
-	Inferences []Inference `json:"inferences"`
-	Page       struct {
-		TotalCount int `json:"total_count"`
-	} `json:"page"`
-}
-
-// Inference type
-type Inference struct {
-	ID    int     `json:"id"`
-	Score float32 `json:"score"`
-	Face  *face   `json:"face"`
-	Label *Label  `json:"label"`
-}
-
-type face struct {
-	ID       int    `json:"id"`
-	ImageURL string `json:"image_url"`
-	Photo    *photo `json:"photo"`
-}
-
-type photo struct {
-	SourceURL string     `json:"source_url"`
-	PhotoURL  string     `json:"photo_url"`
-	Caption   string     `json:"caption"`
-	PostedAt  *time.Time `json:"posted_at"`
-}
-
 // Label type
 type Label struct {
 	ID          int    `json:"id"`
