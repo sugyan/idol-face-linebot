@@ -6,11 +6,15 @@ import (
 	"strconv"
 )
 
-type WriteBuffer struct{ b []byte }
+const bufferSize = 4096
+
+type WriteBuffer struct {
+	b []byte
+}
 
 func NewWriteBuffer() *WriteBuffer {
 	return &WriteBuffer{
-		b: make([]byte, 0, defaultBufSize),
+		b: make([]byte, 0, 4096),
 	}
 }
 

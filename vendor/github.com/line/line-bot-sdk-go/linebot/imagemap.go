@@ -41,10 +41,24 @@ type ImagemapArea struct {
 	Height int `json:"height"`
 }
 
+// ImagemapVideo type
+type ImagemapVideo struct {
+	OriginalContentURL string        `json:"originalContentUrl"`
+	PreviewImageURL    string        `json:"previewImageUrl"`
+	Area               ImagemapArea  `json:"area"`
+	ExternalLink       *ExternalLink `json:"externalLink,omitempty"`
+}
+
+// ExternalLink type
+type ExternalLink struct {
+	LinkURI string `json:"linkUri"`
+	Label   string `json:"label"`
+}
+
 // ImagemapAction type
 type ImagemapAction interface {
 	json.Marshaler
-	imagemapAction()
+	ImagemapAction()
 }
 
 // URIImagemapAction type
@@ -85,9 +99,11 @@ func (a *MessageImagemapAction) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// implements ImagemapAction interface
-func (a *URIImagemapAction) imagemapAction()     {}
-func (a *MessageImagemapAction) imagemapAction() {}
+// ImagemapAction implements ImagemapAction interface
+func (a *URIImagemapAction) ImagemapAction() {}
+
+// ImagemapAction implements ImagemapAction interface
+func (a *MessageImagemapAction) ImagemapAction() {}
 
 // NewURIImagemapAction function
 func NewURIImagemapAction(linkURL string, area ImagemapArea) *URIImagemapAction {
